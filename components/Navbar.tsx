@@ -46,10 +46,10 @@ const Navbar = () =>{
                             </Link>
                         </Button>                        
                         <Button                         
-                        variant={isActive("/addbook") ? "default" : "ghost"}
+                        variant={isActive("/add-book") ? "default" : "ghost"}
                         size="sm"
                         asChild>
-                            <Link href="/addbook">
+                            <Link href="/add-book">
                             <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">Add book</span>
                             </Link>
