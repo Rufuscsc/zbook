@@ -1,10 +1,10 @@
 "use client"
 
 import Link from 'next/link';
-import React from 'react'
 import { Button } from './ui/button';
 import { BookKey, BookOpen, Compass, Plus, Library } from 'lucide-react';
 import {usePathname} from 'next/navigation';
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 
 const Navbar = () =>{
     const pathname = usePathname();
@@ -62,13 +62,21 @@ const Navbar = () =>{
                             <Library className="w-4 h-4" />
                             <span className="hidden sm:inline">Library</span>
                             </Link>
-                        </Button>                        
-                        <Button                         
-                        variant={"outline"}
-                        size="sm"
-                        asChild>
-                            <Link href="/signin">Sign In</Link>
-                        </Button>
+                        </Button>  
+
+                        <SignedOut>
+                            <SignInButton>
+                                <Button                         
+                                variant={"outline"}
+                                size={"sm"}
+                                >
+                                    <Link href="/signin">Sign In</Link>
+                                </Button>
+                            </SignInButton>
+                        </SignedOut>
+                        <SignedIn>
+                            <UserButton />
+                        </SignedIn>                      
                     </div>
                 </div>
             </div>
