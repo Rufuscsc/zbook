@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import React from 'react'
 import { Button } from './ui/button';
-import { BookKey } from 'lucide-react';
+import { BookKey, BookOpen, Compass, Plus, Library } from 'lucide-react';
 import {usePathname} from 'next/navigation';
 
 const Navbar = () =>{
@@ -30,26 +30,38 @@ const Navbar = () =>{
                         size="sm"
                         asChild
                         >
-                            <Link href="/">Feed</Link>
+                            <Link href="/" className="gap-2">
+                            <BookOpen className="w-4 h-4" />
+                            <span className="hidden sm:inline">Feed</span>
+                            </Link>
                         </Button>
                         <Button
                         variant={isActive("/explore") ? "default" : "ghost"}
                         size="sm"
                         asChild
                         >
-                            <Link href="/explore">Explore</Link>
+                            <Link href="/explore">
+                            <Compass className="w-4 h-4" />
+                            <span className="hidden sm:inline">Explore</span>
+                            </Link>
                         </Button>                        
                         <Button                         
                         variant={isActive("/addbook") ? "default" : "ghost"}
                         size="sm"
                         asChild>
-                            <Link href="/addbook">Add Book</Link>
+                            <Link href="/addbook">
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Add book</span>
+                            </Link>
                         </Button>                        
                         <Button                        
                         variant={isActive("/library") ? "default" : "ghost"}
                         size="sm"
                         asChild>
-                            <Link href="/library">Library</Link>
+                            <Link href="/library">
+                            <Library className="w-4 h-4" />
+                            <span className="hidden sm:inline">Library</span>
+                            </Link>
                         </Button>                        
                         <Button                         
                         variant={"outline"}
