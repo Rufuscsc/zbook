@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Playfair } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const playfair = Playfair({
   variable: "--font-playfair",
