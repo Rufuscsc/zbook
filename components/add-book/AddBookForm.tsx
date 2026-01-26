@@ -9,17 +9,17 @@ import { Textarea } from "../ui/textarea";
 import { BookPlus } from "lucide-react";
 
 const popularGenre = [
-        "Classics",
-        "Fiction",
-        "Adventure",
-        "Fantasy", 
-        "Sci-Fi", 
-        "Mystery", 
-        "Romance",
-        "Drama",
-        "Poetry",
-        "Gothic",
-    ];
+    "Classics",
+    "Fiction",
+    "Adventure",
+    "Fantasy", 
+    "Sci-Fi", 
+    "Mystery", 
+    "Romance",
+    "Drama",
+    "Poetry",
+    "Gothic",
+];
 
 const AddBookform = ()=>{
     const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -35,14 +35,16 @@ const AddBookform = ()=>{
         const formData = new FormData(form);
         
         if(coverFile){
-            formData.set("cover", coverFile);
+            formData.set("cover", coverFile)
         }
-        console.log("FormData: ", formData)
+
+        setIsLoading(false)
     };
     
     return(
         <Card className="border-0 md:border p-8 max-w-3xl mx-auto my-3 shadow-none md:shadow-sm">
             <form onSubmit={handleSubmit} className="space-y-6">
+                <input type="hidden" name="genre" value={selectedGenre}/>
                 <div className="space-y-2">
                     <Label htmlFor="title" className="font-semibold text-lg">
                         Book Title *
@@ -114,7 +116,7 @@ const AddBookform = ()=>{
                     <Input id="year" name="year" type="number" placeholder="1813" min="1800" max={new Date().getFullYear()} className="h-12 text-base!"/>
                 </div>
                 <div className="my-7 pt-4">
-                    <Button type="submit" className="w-full" size={"lg"} disabled ={isLoading}> <BookPlus className={'w-5 h-6 ${isLoading ? "animate-spin" : ""}'}/>{isLoading ? "Adding..." : "Add book to library"} </Button>
+                    <Button type="submit" className="w-full" size={"lg"} disabled ={isLoading}> <BookPlus className={`w-5 h-6 ${isLoading ? "animate-spin" : ""}`} />{isLoading ? "Adding..." : "Add book to library"} </Button>
                 </div>
             </form>
         </Card>
