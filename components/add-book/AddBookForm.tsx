@@ -7,6 +7,8 @@ import { Label } from "../ui/label";
 import {useState} from "react";
 import { Textarea } from "../ui/textarea";
 import { BookPlus } from "lucide-react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 const popularGenre = [
     "Classics",
@@ -26,6 +28,7 @@ const AddBookform = ()=>{
     const [selectedGenre, setSelectedGenre] = useState("");
     const [coverFile, setCoverFile] = useState<File | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) =>{
         e.preventDefault();
@@ -38,7 +41,23 @@ const AddBookform = ()=>{
             formData.set("cover", coverFile)
         }
 
-        setIsLoading(false)
+        try{
+            await axios.post("/api/book", formData, {
+                headers: {
+                    "Content-Type" : "multipart/form-data"
+                }
+            });
+
+            console.log("Book added successfully ");
+            router.push("/explore");
+
+        }
+        catch(error){
+            console.log("Error adding book: ", error);
+            
+        } finally {
+            setIsLoading(false);
+        }
     };
     
     return(
