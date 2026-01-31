@@ -12,7 +12,7 @@ const Hero = () =>{
                 <p className="text-lg text-[#847062] leading-relaxed">Power your most ambitious projects with the ZBook workstation collection. Built for engineers, developers, and data scientists, these machines offer the expandability and thermal efficiency required for sustained peak performance.
                 </p>
                 <Button asChild>
-                    <Link href="/explore-more">
+                    <Link href="/explore">
                     <span>Explore more book</span>
                     <ArrowRight className="w-4 h-4 inline"/>
                     </Link>

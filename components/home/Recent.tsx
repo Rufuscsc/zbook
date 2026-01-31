@@ -1,7 +1,7 @@
 "use client";
 import axios from "axios";
 import { ArrowRight, Loader2 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import BookCard from "../BookCard";
