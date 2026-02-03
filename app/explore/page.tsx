@@ -2,8 +2,8 @@
 import BookCard from "@/components/BookCard";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
-import { Funnel } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { Funnel, Loader2 } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 
 const popularGenres = [
@@ -21,7 +21,15 @@ const popularGenres = [
 ];
 
 const ExplorePage = () => {
-  const [selectedGenre, setSelectedGenre] = useState("");
+  const searchParams = useSearchParams();
+  const [selectedGenre, setSelectedGenre] = useState(() => {
+    const gp = searchParams.get("genre");
+    if (gp) {
+      return gp.replace(/^\"(.*)\"$/, "$1");
+    }
+    return "All";
+  });
+
   const [books, setBooks] = useState<Array<Book>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
@@ -31,7 +39,11 @@ const ExplorePage = () => {
     const fetchBooks = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get("/api/book");
+        const genreQuery =
+          selectedGenre && selectedGenre !== "All"
+            ? `?genre=${encodeURIComponent(selectedGenre)}`
+            : "";
+        const response = await axios.get(`/api/book${genreQuery}`);
         const data = response.data;
         setBooks(data.books);
       } catch (error) {
@@ -43,11 +55,11 @@ const ExplorePage = () => {
     };
 
     fetchBooks();
-  }, []);
+  }, [selectedGenre]);
 
   const handleGenreClick = (genre: string) => {
     setSelectedGenre(genre);
-    router.push(`${pathName}?genre=\"${genre}\"`)
+    router.push(`${pathName}?genre=\"${genre}\"`);
   };
 
   return (
@@ -78,13 +90,21 @@ const ExplorePage = () => {
           </Button>
         ))}
       </div>
-      <p className="text-[#847062] mt-5 mb-2 mx-2">Showing {books.length} books</p>
+      <p className="text-[#847062] mt-5 mb-2 mx-2">
+        Showing {books.length} books
+      </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        {books.map((book) => (
-          <BookCard key={book._id} {...book} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="py-5 px-5 min-h-32 flex items-center justify-center text-foreground">
+          <Loader2 className="animate-spin mr-1" /> Loading books...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          {books.map((book) => (
+            <BookCard key={book._id} {...book} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

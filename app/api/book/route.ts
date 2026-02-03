@@ -13,8 +13,8 @@ export async function POST(req: Request) {
     }
 
     // Ensure the function is called with parentheses
-    await connectToDatabase(); 
-    
+    await connectToDatabase();
+
     const user = await currentUser();
     const formData = await req.formData();
 
@@ -23,14 +23,17 @@ export async function POST(req: Request) {
     const genre = formData.get("genre")?.toString() || "";
     const description = formData.get("description")?.toString() || "";
     const publishedYearRaw = formData.get("year")?.toString() || "";
-    
+
     const year = publishedYearRaw ? Number(publishedYearRaw) : undefined;
     const cover = formData.get("cover") as File;
 
     if (!title || !author || !genre || !description) {
       return Response.json(
-        { error: "Title, author, cover image, genre, and description are required" },
-        { status: 400 }
+        {
+          error:
+            "Title, author, cover image, genre, and description are required",
+        },
+        { status: 400 },
       );
     }
 
@@ -45,19 +48,15 @@ export async function POST(req: Request) {
     const book = await Book.create({
       title,
       author,
-      /**
-       * AUTOMATIC SLASH LOGIC:
-       * If Cloudinary returns a secure_url (starts with https://), use it as is.
-       * If it falls back to the filename, automatically prepend the leading "/" 
-       * required by the Next.js Image component for local files.
-       */
-      cover: uploadResult?.secure_url || (cover?.name ? `/${cover.name}` : "/default-cover.jpg"),    
+      cover:
+        uploadResult?.secure_url ||
+        (cover?.name ? `/${cover.name}` : "/default-cover.jpg"),
       genre,
       description,
       year,
-      addedBy: { 
-        id: user?.id, 
-        firstName: user?.firstName || "Anonymous" 
+      addedBy: {
+        id: user?.id,
+        firstName: user?.firstName || "Anonymous",
       },
     });
 
@@ -65,8 +64,11 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Error creating book: ", error);
     return Response.json(
-      { error: "Failed to create book", details: error instanceof Error ? error.message : "Unknown error" }, 
-      { status: 500 }
+      {
+        error: "Failed to create book",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
     );
   }
 }
@@ -75,9 +77,17 @@ export async function POST(req: Request) {
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
+    const genreParam = request.nextUrl.searchParams.get("genre");
+    const query: any = {};
+    if (genreParam) {
+      const genreUnquoted = genreParam.replace(/^"(.*)"$/, "$1");
+      if (genreUnquoted && genreUnquoted !== "All") {
+        query.genre = genreUnquoted;
+      }
+    }
 
     // Fetch books and sort by newest first
-    const books = await Book.find().sort({ createdAt: -1 });
+    const books = await Book.find(query).sort({ createdAt: -1 });
 
     return Response.json({ books }, { status: 200 });
   } catch (error) {
