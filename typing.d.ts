@@ -11,6 +11,6 @@ interface Book {
   };
   createdAt: string;
   updatedAt: string;
-  publishedYear: number;
+  year: number;
   description: string;
 }
