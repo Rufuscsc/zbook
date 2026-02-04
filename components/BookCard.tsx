@@ -5,7 +5,7 @@ import { Badge } from "./ui/badge";
 
 const BookCard = ({ _id, title, author, cover, genre, addedBy }: Book) => {
   // 1. Ensure local paths have a leading slash and remote paths remain absolute
-  const imageSrc = cover.startsWith("http") ? cover : `/${cover}`;
+  const imageSrc = cover.startsWith("http") ? cover : `${cover}`;
 
   return (
     <Link href={`/book/${_id}`}>
