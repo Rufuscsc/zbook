@@ -3,6 +3,7 @@ import { Playfair } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Suspense } from "react";
 
 const playfair = Playfair({
   variable: "--font-playfair",
@@ -22,14 +23,15 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-    <html lang="en">
-      <body
-        className={`${playfair.className} antialiased bg-[#FBFA8]`}
-      >
-        <Navbar/>
-        {children}
-      </body>
-    </html>
+      <html lang="en">
+        <body className={`${playfair.className} antialiased bg-[#FBFA8]`}>
+          <Suspense fallback={<div>Loading...</div>}>
+            {" "}
+            <Navbar />
+            {children}
+          </Suspense>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }
