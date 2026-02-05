@@ -26,7 +26,6 @@ export default function RootLayout({
       <html lang="en">
         <body className={`${playfair.className} antialiased bg-[#FBFA8]`}>
           <Suspense fallback={<div>Loading...</div>}>
-            {" "}
             <Navbar />
             {children}
           </Suspense>
