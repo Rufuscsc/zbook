@@ -8,16 +8,16 @@ import { useState, useEffect } from "react";
 
 const popularGenres = [
   "All",
-  "Classic",
+  "Classics",
   "Fiction",
+  "Adventure",
+  "Fantasy",
+  "Sci-Fi",
+  "Mystery",
   "Romance",
   "Drama",
-  "Gothic",
-  "Dystopian",
-  "Adventure",
   "Poetry",
-  "Mystery",
-  "Fantasy",
+  "Gothic",
 ];
 
 const ExplorePage = () => {

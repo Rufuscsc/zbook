@@ -1,5 +1,4 @@
 import EditBookForm from '@/components/EditBookForm'
-import React from 'react'
 
 const EditBook = async ({ params }: { params: Promise<{ bookId: string }> }) => {
   const { bookId } = await params;
@@ -12,8 +11,6 @@ const EditBook = async ({ params }: { params: Promise<{ bookId: string }> }) => 
       <p className="text-base text-[#847062] leading-relaxed text-center">
         Update the details of your literary treasure
       </p>
-
-      {/* Form */}
       <EditBookForm bookId={bookId} />
     </div>
   )

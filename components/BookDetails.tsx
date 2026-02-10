@@ -1,8 +1,20 @@
+"use client"
+
 import Image from "next/image";
 import { Button } from "./ui/button";
-import { BookPlus, Calendar, Dot, Edit, Trash2, User } from "lucide-react";
+import {
+  BookPlus,
+  Calendar,
+  Dot,
+  Edit,
+  Loader2,
+  Trash2,
+  User,
+} from "lucide-react";
 import { Badge } from "./ui/badge";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
+import { useState } from "react";
 
 const BookDetails = ({
   _id,
@@ -15,6 +27,8 @@ const BookDetails = ({
   addedBy,
   createdAt,
 }: Book) => {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const [isDeleting, setIsDeleting] = useState(false);
   const formatDate = (d?: string) => {
     if (!d) return "";
 
@@ -62,20 +76,25 @@ const BookDetails = ({
                 {genre}
               </Badge>
             )}
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="hover:bg-accent" asChild>
-                <Link href={`/book/${_id}/edit`}>
-                    <Edit className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:bg-destructive/10"
-              >
-                <Trash2 className="h-5 w-5 text-destructive" />
-              </Button>
-            </div>
+            {isLoaded &&
+            isSignedIn &&
+            addedBy?.id &&
+            user?.id === addedBy.id ? (
+              <div>
+                <Button variant={"ghost"} size="icon" asChild>
+                  <Link href={`/book/${_id}/edit`}>
+                    <Edit />
+                  </Link>
+                </Button>
+                <Button variant={"ghost"} size="icon">
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-destructive" />
+                  ) : (
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  )}
+                </Button>
+              </div>
+            ) : null}
           </div>
 
           <h1 className="font-bold text-3xl md:text-5xl lg:text-6xl tracking-tight text-foreground">
