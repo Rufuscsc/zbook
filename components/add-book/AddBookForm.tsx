@@ -133,7 +133,7 @@ const AddBookform = () => {
                 }}
                 className="hidden w-full cursor-pointer text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#E6B81D] file:text-white"
               />
-              <button type='button' onClick={() => uploadFileInputRef?.current?.click()} className="w-fit cursor-pointer text-sm text-muted-foreground mr-4 py-2 px-4 rounded-full border-0 bg-[#E6B81D] text-white">
+              <button type='button' onClick={() => uploadFileInputRef?.current?.click()} className="w-fit cursor-pointer text-sm mr-4 py-2 px-4 rounded-full border-0 bg-[#E6B81D] text-white">
                 Upload file
               </button>
 

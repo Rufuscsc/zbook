@@ -47,10 +47,10 @@ const BookDetails = ({
     }
   };
   return (
-    <div className="w-full p-6">
+    <div className="w-full p-4">
       <div className="flex flex-col md:flex-row items-start gap-7 lg:gap-12">
         <div className="w-full md:w-1/3 lg:w-1/4 flex flex-col items-center md:items-start">
-          <div className="relative w-full max-w-70 md:max-w-none aspect-2/3 max-h-screen md:max-h-none overflow-hidden rounded-md bg-muted shadow-lg">
+          <div className="relative w-full max-w-70 md:max-w-none aspect-2/3 md:max-h-screen overflow-hidden rounded-md bg-muted shadow-lg">
             {cover ? (
               <Image
                 src={cover}
@@ -137,7 +137,14 @@ const BookDetails = ({
 
             {createdAt && <span>{formatDate(createdAt)}</span>}
           </p>
-          <Button onClick={() => router.push(`/book/${_id}/read`)}>Read</Button>
+          <Button
+            className="mt-3 flex items-center justify-center gap-2 w-fit py-2 px-6 
+             bg-[#000000] text-white font-medium rounded-full transition-colors 
+             border border-transparent hover:bg-[#000000]/80"
+            onClick={() => router.push(`/book/${_id}/read`)}
+          >
+            Read
+          </Button>
         </div>
       </div>
     </div>
