@@ -6,8 +6,7 @@ const Hero = () => {
   return (
     <section className="bg-white border-b border-[#DAD3C8]">
       <div className="container mx-auto px-6 py-16 lg:py-28">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left: Content */}
+        <div className="flex flex-col-reverse lg:flex-row gap-12 items-center">
           <div className="space-y-4 max-w-2xl">
             <h1 className="text-5xl md:text-5xl font-bold text-[#1A1A1A] uppercase leading-15">
               Welcome to a Place of Knowledge
