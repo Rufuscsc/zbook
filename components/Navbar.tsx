@@ -16,7 +16,7 @@ const Navbar = () =>{
         return false;
     }
     return(
-        <nav className="border-b border-[#DAD3C8] bg-[#FCFAF7]/50 backdrop-blur-xs sticky top-0 z-50 px-4">
+        <nav className="border-b border-[#DAD3C8] bg-[#FCFAF7]/50 backdrop-blur-xs h-17.5 sticky top-0 z-50 px-4">
             <div className="mx-auto">
                 <div className="flex items-center justify-between h-16">
                     <Link href="/" className="flex items-center gap-2"> 

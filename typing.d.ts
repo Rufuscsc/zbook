@@ -3,6 +3,7 @@ interface Book {
   title: string;
   author: string;
   cover: string;
+  pdfUrl: string;
   genre?: string;
   reviewCount?: number;
   addedBy?: {

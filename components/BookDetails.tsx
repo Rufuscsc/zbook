@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Image from "next/image";
 import { Button } from "./ui/button";
@@ -15,6 +15,7 @@ import { Badge } from "./ui/badge";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const BookDetails = ({
   _id,
@@ -28,6 +29,7 @@ const BookDetails = ({
   createdAt,
 }: Book) => {
   const { isLoaded, isSignedIn, user } = useUser();
+  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const formatDate = (d?: string) => {
     if (!d) return "";
@@ -135,6 +137,7 @@ const BookDetails = ({
 
             {createdAt && <span>{formatDate(createdAt)}</span>}
           </p>
+          <Button onClick={() => router.push(`/book/${_id}/read`)}>Read</Button>
         </div>
       </div>
     </div>
