@@ -9,7 +9,7 @@ const BookCard = ({ _id, title, author, cover, genre, addedBy }: Book) => {
 
   return (
     <Link href={`/book/${_id}`}>
-      <div className="group bg-white rounded-sm border-1 hover:border transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1">
+      <div className="group bg-white rounded-sm border hover:border transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1">
         <div className="w-full h-80 relative overflow-hidden">
           <Image 
             src={imageSrc} 
