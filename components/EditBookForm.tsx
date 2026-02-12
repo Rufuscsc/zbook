@@ -7,7 +7,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { BookPlus } from "lucide-react";
+import { BookPlus, FileText } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
@@ -28,6 +28,7 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
   const [selectedGenre, setSelectedGenre] = useState("");
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null); // New State for PDF
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
@@ -50,7 +51,7 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
         setAuthor(book.author || "");
         setSelectedGenre(book.genre || "");
         setDescription(book.description || "");
-        setPublishedYear(book.publishedYear ? String(book.publishedYear) : "");
+        setPublishedYear(book.year ? String(book.year) : "");
         if (book.cover) setCoverPreview(book.cover);
       } catch (error) {
         console.error("Failed to fetch book for editing", error);
@@ -69,6 +70,10 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
 
     if (coverFile) {
       formData.set("cover", coverFile);
+    }
+    // Append the PDF file to formData
+    if (pdfFile) {
+      formData.set("pdf", pdfFile);
     }
 
     try {
@@ -177,8 +182,34 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
                 </p>
               </div>
             </div>
+            <div className="space-y-2 my-7">
+                      <Label htmlFor="pdf" className="font-semibold text-lg">
+                        Book PDF *
+                      </Label>
+                      <div className="flex items-center gap-4 border-2 border-dashed rounded-lg p-3 bg-muted/30">
+                        <div className="bg-[#E6B81D]/10 p-3 rounded-full">
+                          <FileText className="w-6 h-6 text-[#E6B81D]" />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            id="pdf"
+                            name="pdf"
+                            type="file"
+                            accept=".pdf"
+                            required
+                            onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
+                            className="block w-full cursor-pointer text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#E6B81D] file:text-white"
+                          />
+                          <p className="text-sm! text-muted-foreground mt-1">
+                            {pdfFile
+                              ? `Selected: ${pdfFile.name}`
+                              : "Upload the book PDF file (Max 20MB)"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-            {/* Genre */}
+            
             <div className="space-y-3">
               <Label className="font-semibold text-lg">Genre *</Label>
               <div className="flex flex-wrap gap-2">
@@ -220,7 +251,7 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
 
               <Input
                 id="year"
-                name="publishedYear"
+                name="year"
                 type="number"
                 placeholder="1813"
                 min="1000"

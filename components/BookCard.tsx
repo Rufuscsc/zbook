@@ -9,7 +9,6 @@ const BookCard = ({ _id, title, author, cover, genre, addedBy }: Book) => {
 
   return (
     <Link href={`/book/${_id}`}>
-      {/* 2. Added "group" class for hover effects common in marketplaces like Hustlers */}
       <div className="group bg-white rounded-sm hover:border transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1">
         {/* 3. Parent MUST have "relative" for fill to work */}
         <div className="w-full h-80 relative overflow-hidden">

@@ -21,7 +21,7 @@ const Navbar = () =>{
                 <div className="flex items-center justify-between h-16">
                     <Link href="/" className="flex items-center gap-2"> 
                         <BookKey className="w-6 h-6"/>
-                        <span className="text-xl font-bold text-foreground">Zbooks</span>
+                        <span className="text-xl font-bold text-foreground">E-books</span>
                     </Link>
 
                     <div className="flex items-center gap-2">

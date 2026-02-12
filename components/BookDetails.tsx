@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Button } from "./ui/button";
 import {
+  BookMinus,
   BookPlus,
   Calendar,
   Dot,
@@ -14,8 +15,9 @@ import {
 import { Badge } from "./ui/badge";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 
 const BookDetails = ({
   _id,
@@ -31,6 +33,11 @@ const BookDetails = ({
   const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isInLibrary, setIsInLibrary] = useState(false);
+  const [isCheckingLibrary, setIsCheckingLibrary] = useState(true);
+   const [isRemoving, setIsRemoving] = useState(false);
+
   const formatDate = (d?: string) => {
     if (!d) return "";
 
@@ -44,6 +51,101 @@ const BookDetails = ({
       });
     } catch {
       return d;
+    }
+  };
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await axios.delete(`/api/book/${_id}`);
+      console.log("Book deleted successfully");
+      router.push("/explore");
+    } catch (error) {
+      console.error("Failed to delete book:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleAddToLibrary = async () => {
+    if (!_id) {
+      console.log("Missing book id");
+      return;
+    }
+
+    try {
+      setIsAdding(true);
+      const res = await axios.post("/api/library", { bookId: _id });
+      console.log(res);
+
+      if (res.data?.added) {
+        setIsInLibrary(true);
+      }
+    } catch (error) {
+      console.error("Failed to add to library", error);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const checkLibray = async () => {
+      if (!_id) {
+        if (mounted) {
+          setIsCheckingLibrary(false);
+          return;
+        }
+      }
+
+      try {
+        setIsCheckingLibrary(true);
+
+        const res = await axios.get("/api/library");
+        console.log("response: ", res);
+        const books = res.data?.library?.books || [];
+        console.log("Books: ", books);
+        const found = books.some((b: Book) => {
+          if (!b) return false;
+          if (b._id) {
+            return b._id === _id;
+          }
+          return false;
+        });
+
+        console.log("Found: ", found);
+        if (mounted) {
+          setIsInLibrary(found);
+        }
+      } catch (error) {
+        console.error("Failed to check library:", error);
+      } finally {
+        if (mounted) setIsCheckingLibrary(false);
+      }
+    };
+
+    checkLibray();
+
+    return () => {
+      mounted = false;
+    };
+  }, [_id]);
+
+  const handleRemoveFromLibrary = async () => {
+    if (!_id) {
+      return;
+    }
+
+    try {
+      setIsRemoving(true);
+      const res = await axios.delete("/api/library", { data: { bookId: _id } });
+
+      if (res.data?.removed) {
+        setIsInLibrary(false);
+      }
+    } catch (error) {
+      console.error("Failed to remove from library", error);
+    } finally {
+      setIsRemoving(false);
     }
   };
   return (
@@ -65,10 +167,40 @@ const BookDetails = ({
             )}
           </div>
 
-          <div className="pt-4 w-full max-w-70 md:max-w-none">
-            <Button className="w-full shadow-md" size="lg">
-              <BookPlus className="mr-2 h-5 w-5" /> Add to my library
-            </Button>
+          <div className="pt-4 w-full">
+            {isCheckingLibrary ? (
+              <Button className="w-full" disabled>
+                <Loader2 className="w-4 h-4 animate-spin" />
+              </Button>
+            ) : isInLibrary ? (
+              <>
+                <Button
+                  className="w-full"
+                  onClick={handleRemoveFromLibrary}
+                  disabled={isRemoving}
+                >
+                  {isRemoving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <BookMinus />
+                      Remove from Library
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button className="w-full" onClick={handleAddToLibrary}>
+                {isAdding ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <BookPlus />
+                    Add to My Library
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
         <div className="flex-1 w-full">
@@ -78,17 +210,21 @@ const BookDetails = ({
                 {genre}
               </Badge>
             )}
+
+            {/* Updated Permission Logic */}
             {isLoaded &&
             isSignedIn &&
-            addedBy?.id &&
-            user?.id === addedBy.id ? (
+            (user?.id === addedBy?.id ||
+              user?.primaryEmailAddress?.emailAddress ===
+                "rufusmfmwellens@gmail.com") ? (
               <div>
                 <Button variant={"ghost"} size="icon" asChild>
                   <Link href={`/book/${_id}/edit`}>
-                    <Edit />
+                    <Edit className="w-4 h-4" />{" "}
+                    {/* Standard Lucide Edit Icon */}
                   </Link>
                 </Button>
-                <Button variant={"ghost"} size="icon">
+                <Button variant={"ghost"} size="icon" onClick={handleDelete}>
                   {isDeleting ? (
                     <Loader2 className="w-4 h-4 animate-spin text-destructive" />
                   ) : (
