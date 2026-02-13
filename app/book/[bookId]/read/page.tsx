@@ -3,7 +3,6 @@ import axios from "axios";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-
 const ReadBook = () => {
   const { bookId } = useParams();
 
@@ -27,9 +26,8 @@ const ReadBook = () => {
     <div className="bg-background h-[calc(100vh-70px)] overflow-y-hidden">
       <div className="w-full h-full border border-[#DAD3C8] overflow-hidden shadow-lg bg-white">
         <iframe
-          src={`${bookDetails?.pdfUrl}#toolbar=0`}
+          src={`https://docs.google.com/gview?url=${bookDetails?.pdfUrl}&embedded=true`}
           className="w-full h-full"
-          title="Book Viewer"
         />
       </div>
     </div>
