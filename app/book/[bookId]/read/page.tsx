@@ -25,10 +25,12 @@ const ReadBook = () => {
   return (
     <div className="bg-background h-[calc(100vh-70px)] overflow-y-hidden">
       <div className="w-full h-full border border-[#DAD3C8] overflow-hidden shadow-lg bg-white">
-        <iframe
-          src={`https://docs.google.com/gview?url=${bookDetails?.pdfUrl}&embedded=true`}
-          className="w-full h-full"
-        />
+        {bookDetails?.pdfUrl && (
+          <iframe
+            src={`${bookDetails.pdfUrl}#toolbar=0`}
+            className="w-full h-full"
+          />
+        )}
       </div>
     </div>
   );
