@@ -145,7 +145,7 @@ const LibraryPage = () => {
                   </div>
                   
                   {/* Glass-styled wrapper for the BookCard */}
-                  <div className="pointer-events-auto transition-transform duration-300 group-hover:-translate-y-2">
+                  <div className="pointer-events-auto transition-transform duration-500 group-hover:-translate-y-2">
                     <BookCard
                       _id={book._id as string}
                       title={book?.title || "Untitled"}

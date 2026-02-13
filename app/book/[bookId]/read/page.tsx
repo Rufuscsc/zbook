@@ -27,7 +27,7 @@ const ReadBook = () => {
     <div className="bg-background h-[calc(100vh-70px)] overflow-y-hidden">
       <div className="w-full h-full border border-[#DAD3C8] overflow-hidden shadow-lg bg-white">
         <iframe
-          src={bookDetails?.pdfUrl}
+          src={`${bookDetails?.pdfUrl}#toolbar=0`}
           className="w-full h-full"
           title="Book Viewer"
         />
