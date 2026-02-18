@@ -6,7 +6,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { useRef, useState } from "react";
 import { Textarea } from "../ui/textarea";
-import { BookPlus, FileText } from "lucide-react"; // Added FileText icon
+import { BookPlus, FileText } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
@@ -27,10 +27,14 @@ const AddBookform = () => {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [selectedGenre, setSelectedGenre] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [pdfFile, setPdfFile] = useState<File | null>(null); // New State for PDF
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
+  const [price, setPrice] = useState("");
+  const [currency, setCurrency] = useState("NGN");
+  const [isFree, setIsFree] = useState(false);
+
+  const router = useRouter();
   const uploadFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,13 +44,24 @@ const AddBookform = () => {
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
 
-    if (coverFile) {
-      formData.set("cover", coverFile);
-    }
+    if (coverFile) formData.set("cover", coverFile);
+    if (pdfFile) formData.set("pdf", pdfFile);
 
-    // Append the PDF file to formData
-    if (pdfFile) {
-      formData.set("pdf", pdfFile);
+    if (!isFree) {
+      const parsedPrice = parseFloat(price);
+
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        alert("Enter a valid price (e.g. 1500 or 1500.50)");
+        setIsLoading(false);
+        return;
+      }
+
+      const priceInMinorUnits = Math.round(parsedPrice * 100);
+      formData.set("price", priceInMinorUnits.toString());
+      formData.set("currency", currency);
+    } else {
+      formData.set("price", "0");
+      formData.set("currency", currency);
     }
 
     try {
@@ -56,7 +71,6 @@ const AddBookform = () => {
         },
       });
 
-      console.log("Book added successfully ");
       router.push("/explore");
     } catch (error) {
       console.log("Error adding book: ", error);
@@ -69,32 +83,72 @@ const AddBookform = () => {
     <Card className="border-0 md:border p-8 max-w-3xl mx-auto my-3 shadow-none md:shadow-sm">
       <form onSubmit={handleSubmit} className="space-y-6">
         <input type="hidden" name="genre" value={selectedGenre} />
+
+        {/* TITLE */}
         <div className="space-y-2">
-          <Label htmlFor="title" className="font-semibold text-lg">
-            Book Title *
-          </Label>
-          <Input
-            id="title"
-            name="title"
-            placeholder="Enter the book title"
-            required
-            className="h-12 textbase!"
-          />
+          <Label className="font-semibold text-lg">Book Title *</Label>
+          <Input name="title" required className="h-12" />
         </div>
 
-        <div className="space-y-2 my-7">
-          <Label htmlFor="author" className="font-semibold text-lg">
-            Author *
-          </Label>
-          <Input
-            id="author"
-            name="author"
-            placeholder="Enter Author name"
-            required
-            className="h-12 textbase!"
-          />
+        {/* AUTHOR */}
+        <div className="space-y-2">
+          <Label className="font-semibold text-lg">Author *</Label>
+          <Input name="author" required className="h-12" />
         </div>
 
+        {/* 🔥 FREE TOGGLE */}
+        <div className="flex items-center gap-3 mt-4">
+          <input
+            type="checkbox"
+            checked={isFree}
+            onChange={(e) => {
+              setIsFree(e.target.checked);
+              if (e.target.checked) setPrice("");
+            }}
+            className="h-4 w-4"
+          />
+          <Label className="text-base font-medium">This book is FREE</Label>
+        </div>
+
+        {/* PRICE SECTION */}
+        <div className="space-y-2">
+          <Label className="font-semibold text-lg">
+            Price {isFree ? "(Disabled)" : "*"}
+          </Label>
+
+          <div className="flex gap-3">
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="1500.00"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              disabled={isFree}
+              required={!isFree}
+              className="h-12"
+            />
+
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              disabled={isFree}
+              className="border rounded-md px-3 disabled:bg-gray-100"
+            >
+              <option value="NGN">NGN</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </div>
+
+          {isFree && (
+            <p className="text-sm text-green-600">
+              This book will be available for free download.
+            </p>
+          )}
+        </div>
+
+        {/* COVER */}
         <div className="space-y-2 my-7">
           <Label htmlFor="cover" className="font-semibold text-lg">
             Cover image *
@@ -133,7 +187,11 @@ const AddBookform = () => {
                 }}
                 className="hidden w-full cursor-pointer text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#E6B81D] file:text-white"
               />
-              <button type='button' onClick={() => uploadFileInputRef?.current?.click()} className="w-fit cursor-pointer text-sm mr-4 py-2 px-4 rounded-full border-0 bg-[#E6B81D] text-white">
+              <button
+                type="button"
+                onClick={() => uploadFileInputRef?.current?.click()}
+                className="w-fit cursor-pointer text-sm mr-4 py-2 px-4 rounded-full border-0 bg-[#E6B81D] text-white"
+              >
                 Upload file
               </button>
 
@@ -171,6 +229,7 @@ const AddBookform = () => {
           </div>
         </div>
 
+        {/* GENRE */}
         <div className="space-y-2">
           <Label htmlFor="title" className="font-semibold text-lg">
             Gener *
@@ -219,20 +278,17 @@ const AddBookform = () => {
             className="h-12 text-base!"
           />
         </div>
-        <div className="my-7 pt-4">
-          <Button
-            type="submit"
-            className="w-full"
-            size={"lg"}
-            disabled={isLoading}
-          >
-            {" "}
-            <BookPlus
-              className={`w-5 h-6 ${isLoading ? "animate-spin" : ""}`}
-            />
-            {isLoading ? "Adding..." : "Add book to library"}{" "}
-          </Button>
-        </div>
+
+        {/* SUBMIT */}
+        <Button
+          type="submit"
+          className="w-full mt-6"
+          size="lg"
+          disabled={isLoading}
+        >
+          <BookPlus className={`w-5 h-5 ${isLoading && "animate-spin"}`} />
+          {isLoading ? "Adding..." : "Add Book"}
+        </Button>
       </form>
     </Card>
   );

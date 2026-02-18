@@ -27,7 +27,7 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ bookId: string }> },
+  { params }: { params: Promise<{ bookId: string }> }
 ) {
   try {
     const { isAuthenticated } = await auth();
@@ -43,16 +43,19 @@ export async function PATCH(
     const formData = await request.formData();
 
     // 1. Extract standard fields
-    const title = formData.get("title")?.toString() || "";
-    const author = formData.get("author")?.toString() || "";
-    const genre = formData.get("genre")?.toString() || "";
-    const description = formData.get("description")?.toString() || "";
-    const publishedYearRaw = formData.get("year")?.toString() || "";
-    const publishedYear = publishedYearRaw ? Number(publishedYearRaw) : undefined;
+    const title = formData.get("title")?.toString();
+    const author = formData.get("author")?.toString();
+    const genre = formData.get("genre")?.toString();
+    const description = formData.get("description")?.toString();
+    const publishedYearRaw = formData.get("year")?.toString();
+    
+    // NEW: Extract Price and Currency
+    const priceRaw = formData.get("price")?.toString();
+    const currency = formData.get("currency")?.toString();
 
     // 2. Extract Files
-    const cover = formData.get("cover") as File;
-    const pdf = formData.get("pdf") as File;
+    const cover = formData.get("cover") as File | null;
+    const pdf = formData.get("pdf") as File | null;
 
     const existingBook = await Book.findById(bookId);
     if (!existingBook) {
@@ -60,25 +63,23 @@ export async function PATCH(
     }
 
     // 3. Ownership Verification
-   const addedBy = (existingBook as any).addedBy;
+    const addedBy = (existingBook as any).addedBy;
     const requesterId = user?.id;
-    const requesterEmail = user?.emailAddresses?.[0]?.emailAddress; // Get email from Clerk user object
-    
+    const requesterEmail = user?.emailAddresses?.[0]?.emailAddress;
+
     const ADMIN_EMAIL = "rufusmfmwellens@gmail.com";
     let isOwner = false;
     let isAdmin = requesterEmail === ADMIN_EMAIL;
 
-    // Check for Ownership
-    if (requesterId && addedBy && (typeof addedBy === "object" || typeof addedBy === "string")) {
+    if (requesterId && addedBy) {
       const addedById = typeof addedBy === "object" ? (addedBy as any).id : addedBy;
       if (addedById === requesterId) isOwner = true;
     }
 
-    // Allow access if they are the owner OR the specific admin
     if (!isOwner && !isAdmin) {
       return Response.json(
         { error: "Forbidden: only the owner or admin can modify this book" },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
@@ -88,12 +89,23 @@ export async function PATCH(
     if (author) update.author = author;
     if (genre) update.genre = genre;
     if (description) update.description = description;
-    if (publishedYear !== undefined) update.year = publishedYear;
+    
+    // Update Year if provided
+    if (publishedYearRaw) {
+      update.year = Number(publishedYearRaw);
+    }
+
+    // NEW: Update Price and Currency
+    // We check if priceRaw is not null (it might be "0" which is falsy in JS, so check for null/undefined)
+    if (priceRaw !== undefined && priceRaw !== null) {
+        update.price = parseInt(priceRaw); // Store as integer (cents/kobo)
+    }
+    if (currency) {
+        update.currency = currency;
+    }
 
     // 5. Handle Cover Image Update
-    const hasNewCover = !!cover && typeof (cover as any)?.size === "number" && cover.size > 0;
-    if (hasNewCover) {
-      // Deletion of old cover logic
+    if (cover && cover.size > 0) {
       const existingCoverUrl = (existingBook as any).cover;
       if (existingCoverUrl) {
         const publicId = existingCoverUrl.split('/').pop()?.split('.')[0];
@@ -104,22 +116,19 @@ export async function PATCH(
     }
 
     // 6. Handle PDF File Update
-    const hasNewPdf = !!pdf && typeof (pdf as any)?.size === "number" && pdf.size > 0;
-    if (hasNewPdf) {
-      // Deletion of old PDF logic
-      const existingPdfUrl = (existingBook as any).pdfUrl; // Ensure this matches your Schema
+    if (pdf && pdf.size > 0) {
+      const existingPdfUrl = (existingBook as any).pdfUrl;
       if (existingPdfUrl) {
-        // Extracting Public ID for PDFs stored as "raw" or "image"
         const publicId = existingPdfUrl.split('/').pop()?.split('.')[0];
         if (publicId) {
           try {
-            await cloudinary.uploader.destroy(publicId, { resource_type: "raw" }); // PDFs are usually "raw"
+            await cloudinary.uploader.destroy(publicId, { resource_type: "raw" });
           } catch (delErr) {
             console.warn("Failed to delete previous PDF:", delErr);
           }
         }
       }
-      // Upload new PDF - Make sure UploadImage uses resource_type: "auto" or "raw"
+      // Assuming UploadImage handles "auto" resource type correctly for PDFs
       const pdfUpload = await UploadImage(pdf, "zbooks_pdfs") as any;
       if (pdfUpload?.secure_url) update.pdfUrl = pdfUpload.secure_url;
     }
@@ -136,6 +145,7 @@ export async function PATCH(
     return Response.json({ error: "Failed to update book" }, { status: 500 });
   }
 }
+
 
 // Delete book by ID
 export async function DELETE(

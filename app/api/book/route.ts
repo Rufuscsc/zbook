@@ -30,18 +30,30 @@ export async function POST(req: NextRequest) {
     const user = await currentUser();
     const formData = await req.formData();
 
-    const title = formData.get("title")?.toString() ?? "";
-    const author = formData.get("author")?.toString() ?? "";
-    const genre = formData.get("genre")?.toString() ?? "";
-    const description = formData.get("description")?.toString() ?? "";
+    // ============================
+    // Extract Text Fields
+    // ============================
+
+    const title = formData.get("title")?.toString().trim() ?? "";
+    const author = formData.get("author")?.toString().trim() ?? "";
+    const genre = formData.get("genre")?.toString().trim() ?? "";
+    const description = formData.get("description")?.toString().trim() ?? "";
     const publishedYearRaw = formData.get("year")?.toString() ?? "";
 
+    // 🔥 NEW FIELDS
+    const priceRaw = formData.get("price")?.toString() ?? "";
+    const currency = formData.get("currency")?.toString() ?? "USD";
+
     const year = publishedYearRaw ? Number(publishedYearRaw) : undefined;
+    const price = priceRaw ? Number(priceRaw) : NaN;
 
     const cover = formData.get("cover");
     const pdf = formData.get("pdf");
 
-    // Proper file validation
+    // ============================
+    // Validation
+    // ============================
+
     if (
       !title ||
       !author ||
@@ -58,21 +70,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Correct Promise typing using type assertion
+    if (isNaN(price) || price < 0) {
+      return NextResponse.json(
+        { error: "Invalid price value" },
+        { status: 400 }
+      );
+    }
+
+    // ============================
+    // Upload to Cloudinary
+    // ============================
+
     const [coverUpload, pdfUpload] = await Promise.all([
       UploadImage(cover, "zbooks") as Promise<CloudinaryResponse>,
       UploadImage(pdf, "zbooks-file") as Promise<CloudinaryResponse>,
     ]);
 
-    // Optional: Defensive check if secure_url exists
     if (!coverUpload?.secure_url || !pdfUpload?.secure_url) {
       return NextResponse.json(
-        { error: "Cloudinary upload failed to return a secure URL" },
+        { error: "Cloudinary upload failed" },
         { status: 500 }
       );
     }
 
-    console.log('PDF SECURE URL: ', pdfUpload?.secure_url)
+    // ============================
+    // Create Book in Database
+    // ============================
 
     const book = await Book.create({
       title,
@@ -82,6 +105,8 @@ export async function POST(req: NextRequest) {
       genre,
       description,
       year,
+      price,        // stored in minor units (kobo/cents)
+      currency,     // stored currency
       addedBy: {
         id: userId,
         firstName: user?.firstName ?? "Anonymous",
@@ -89,6 +114,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ book }, { status: 201 });
+
   } catch (error) {
     console.error("Error creating book:", error);
 
@@ -125,6 +151,7 @@ export async function GET(request: NextRequest) {
     const books = await Book.find(query).sort({ createdAt: -1 });
 
     return NextResponse.json({ books }, { status: 200 });
+
   } catch (error) {
     console.error("Error fetching books:", error);
 

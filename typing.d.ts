@@ -5,6 +5,9 @@ interface Book {
   cover: string;
   pdfUrl: string;
   genre?: string;
+  price?: number;        
+  currency?: string;
+  isFree?: boolean;    
   reviewCount?: number;
   addedBy?: {
     id: string;

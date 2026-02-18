@@ -11,6 +11,8 @@ import {
   Loader2,
   Trash2,
   User,
+  ShoppingCart,
+  BookOpen,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import Link from "next/link";
@@ -18,6 +20,8 @@ import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { formatPrice } from "@/lib/formatPrice";
+import { motion, AnimatePresence } from "framer-motion";
 
 const BookDetails = ({
   _id,
@@ -29,18 +33,34 @@ const BookDetails = ({
   year,
   addedBy,
   createdAt,
-}: Book) => {
+  price,
+  currency,
+}: Book & { price?: number; currency?: string }) => {
   const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
+  
+  // States
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isInLibrary, setIsInLibrary] = useState(false);
   const [isCheckingLibrary, setIsCheckingLibrary] = useState(true);
-   const [isRemoving, setIsRemoving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isInCart, setIsInCart] = useState(false);
+
+  // Animation Variants
+  const fadeIn = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5 }
+  };
+
+  const staggerContainer = {
+    animate: { transition: { staggerChildren: 0.1 } }
+  };
 
   const formatDate = (d?: string) => {
     if (!d) return "";
-
     try {
       const date = new Date(d);
       if (isNaN(date.getTime())) return d;
@@ -49,241 +69,230 @@ const BookDetails = ({
         month: "long",
         day: "numeric",
       });
-    } catch {
-      return d;
-    }
+    } catch { return d; }
   };
+
+  // --- Handlers (Kept your logic identical) ---
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
       await axios.delete(`/api/book/${_id}`);
-      console.log("Book deleted successfully");
       router.push("/explore");
-    } catch (error) {
-      console.error("Failed to delete book:", error);
-    } finally {
-      setIsDeleting(false);
-    }
+    } catch (error) { console.error(error); } 
+    finally { setIsDeleting(false); }
   };
 
   const handleAddToLibrary = async () => {
-    if (!_id) {
-      console.log("Missing book id");
-      return;
-    }
-
+    if (!_id) return;
     try {
       setIsAdding(true);
       const res = await axios.post("/api/library", { bookId: _id });
-      console.log(res);
+      if (res.data?.added) setIsInLibrary(true);
+    } catch (error) { console.error(error); } 
+    finally { setIsAdding(false); }
+  };
 
-      if (res.data?.added) {
-        setIsInLibrary(true);
-      }
-    } catch (error) {
-      console.error("Failed to add to library", error);
-    } finally {
-      setIsAdding(false);
-    }
+  const handleRemoveFromLibrary = async () => {
+    if (!_id) return;
+    try {
+      setIsRemoving(true);
+      const res = await axios.delete("/api/library", { data: { bookId: _id } });
+      if (res.data?.removed) setIsInLibrary(false);
+    } catch (error) { console.error(error); } 
+    finally { setIsRemoving(false); }
+  };
+
+  const handleAddToCart = async () => {
+    if (!_id) return;
+    try {
+      setIsAddingToCart(true);
+      const res = await axios.post("/api/cart", { bookId: _id });
+      if (res.data?.added) setIsInCart(true);
+    } catch (error) { console.error(error); } 
+    finally { setIsAddingToCart(false); }
+  };
+
+  const handleRemoveFromCart = async () => {
+    if (!_id) return;
+    try {
+      setIsAddingToCart(true);
+      const res = await axios.delete("/api/cart", { data: { bookId: _id } });
+      if (res.data?.removed) setIsInCart(false);
+    } catch (error) { console.error(error); } 
+    finally { setIsAddingToCart(false); }
   };
 
   useEffect(() => {
     let mounted = true;
-    const checkLibray = async () => {
+    const checkLibrary = async () => {
       if (!_id) {
-        if (mounted) {
-          setIsCheckingLibrary(false);
-          return;
-        }
+        if (mounted) setIsCheckingLibrary(false);
+        return;
       }
-
       try {
         setIsCheckingLibrary(true);
-
         const res = await axios.get("/api/library");
-        console.log("response: ", res);
         const books = res.data?.library?.books || [];
-        console.log("Books: ", books);
-        const found = books.some((b: Book) => {
-          if (!b) return false;
-          if (b._id) {
-            return b._id === _id;
-          }
-          return false;
-        });
-
-        console.log("Found: ", found);
-        if (mounted) {
-          setIsInLibrary(found);
-        }
-      } catch (error) {
-        console.error("Failed to check library:", error);
-      } finally {
-        if (mounted) setIsCheckingLibrary(false);
-      }
+        const found = books.some((b: any) => b?._id === _id);
+        if (mounted) setIsInLibrary(found);
+      } catch (error) { console.error(error); } 
+      finally { if (mounted) setIsCheckingLibrary(false); }
     };
-
-    checkLibray();
-
-    return () => {
-      mounted = false;
-    };
+    checkLibrary();
+    return () => { mounted = false; };
   }, [_id]);
 
-  const handleRemoveFromLibrary = async () => {
-    if (!_id) {
-      return;
-    }
-
-    try {
-      setIsRemoving(true);
-      const res = await axios.delete("/api/library", { data: { bookId: _id } });
-
-      if (res.data?.removed) {
-        setIsInLibrary(false);
-      }
-    } catch (error) {
-      console.error("Failed to remove from library", error);
-    } finally {
-      setIsRemoving(false);
-    }
-  };
   return (
-    <div className="w-full p-4">
-      <div className="flex flex-col md:flex-row items-start gap-7 lg:gap-12">
-        <div className="w-full md:w-1/3 lg:w-1/4 flex flex-col items-center md:items-start">
-          <div className="relative w-full max-w-70 md:max-w-none aspect-2/3 md:max-h-screen overflow-hidden rounded-md bg-muted shadow-lg">
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      variants={staggerContainer}
+      className="w-full max-w-7xl mx-auto p-4 md:p-8"
+    >
+      <div className="flex flex-col md:flex-row items-start gap-8 lg:gap-16">
+        
+        {/* LEFT COLUMN: Cover + Buttons */}
+        <motion.div variants={fadeIn} className="w-full md:w-1/3 lg:w-1/4 flex flex-col items-center md:items-start">
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: "spring", stiffness: 300 }}
+            className="relative w-full max-w-75 md:max-w-none aspect-2/3 overflow-hidden rounded-xl bg-muted shadow-2xl ring-1 ring-black/5"
+          >
             {cover ? (
-              <Image
-                src={cover}
-                alt={`${title} cover`}
-                className="object-cover"
-                fill
-              />
+              <Image src={cover} alt={`${title} cover`} className="object-cover" fill priority />
             ) : (
               <div className="flex items-center justify-center h-full w-full text-muted-foreground italic border">
                 No cover available
               </div>
             )}
-          </div>
+          </motion.div>
 
-          <div className="pt-4 w-full">
-            {isCheckingLibrary ? (
-              <Button className="w-full" disabled>
-                <Loader2 className="w-4 h-4 animate-spin" />
-              </Button>
-            ) : isInLibrary ? (
-              <>
-                <Button
-                  className="w-full"
-                  onClick={handleRemoveFromLibrary}
-                  disabled={isRemoving}
-                >
-                  {isRemoving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <BookMinus />
-                      Remove from Library
-                    </>
-                  )}
-                </Button>
-              </>
-            ) : (
-              <Button className="w-full" onClick={handleAddToLibrary}>
-                {isAdding ? (
+          {/* Action Buttons */}
+          <div className="pt-6 w-full flex flex-col gap-3">
+            <AnimatePresence mode="wait">
+              {isCheckingLibrary ? (
+                <Button key="loading" className="w-full" disabled>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <BookPlus />
-                    Add to My Library
-                  </>
-                )}
-              </Button>
-            )}
+                </Button>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col gap-3"
+                >
+                  <Button
+                    variant={isInLibrary ? "outline" : "default"}
+                    className="w-full transition-all duration-300"
+                    onClick={isInLibrary ? handleRemoveFromLibrary : handleAddToLibrary}
+                    disabled={isRemoving || isAdding}
+                  >
+                    {isRemoving || isAdding ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isInLibrary ? (
+                      <><BookMinus className="w-4 h-4 mr-2" /> Remove Library</>
+                    ) : (
+                      <><BookPlus className="w-4 h-4 mr-2" /> Add to Library</>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={isInCart ? handleRemoveFromCart : handleAddToCart}
+                    disabled={isAddingToCart}
+                    variant={isInCart ? "destructive" : "secondary"}
+                    className="w-full"
+                  >
+                    {isAddingToCart ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isInCart ? (
+                      "Remove from Cart"
+                    ) : (
+                      <><ShoppingCart className="w-4 h-4 mr-2" /> Add to Cart</>
+                    )}
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
-        <div className="flex-1 w-full">
-          <div className="flex justify-between items-start mb-4">
+        </motion.div>
+
+        {/* RIGHT COLUMN: Info */}
+        <div className="flex-1 w-full space-y-6">
+          <motion.div variants={fadeIn} className="flex justify-between items-start">
             {genre && (
-              <Badge variant="secondary" className="px-3 py-1">
+              <Badge variant="outline" className="px-4 py-1.5 uppercase tracking-wider text-[10px] font-bold">
                 {genre}
               </Badge>
             )}
 
-            {/* Updated Permission Logic */}
-            {isLoaded &&
-            isSignedIn &&
-            (user?.id === addedBy?.id ||
-              user?.primaryEmailAddress?.emailAddress ===
-                "rufusmfmwellens@gmail.com") ? (
-              <div>
-                <Button variant={"ghost"} size="icon" asChild>
-                  <Link href={`/book/${_id}/edit`}>
-                    <Edit className="w-4 h-4" />{" "}
-                    {/* Standard Lucide Edit Icon */}
-                  </Link>
+            {/* Admin/Owner Controls */}
+            {isLoaded && isSignedIn && (user?.id === addedBy?.id || user?.primaryEmailAddress?.emailAddress === "rufusmfmwellens@gmail.com") && (
+              <div className="flex gap-1 bg-muted rounded-lg p-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                  <Link href={`/book/${_id}/edit`}><Edit className="w-4 h-4" /></Link>
                 </Button>
-                <Button variant={"ghost"} size="icon" onClick={handleDelete}>
-                  {isDeleting ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-destructive" />
-                  ) : (
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  )}
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
+                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </Button>
               </div>
-            ) : null}
-          </div>
+            )}
+          </motion.div>
 
-          <h1 className="font-bold text-3xl md:text-5xl lg:text-6xl tracking-tight text-foreground">
-            {title}
-          </h1>
+          <motion.div variants={fadeIn} className="space-y-2">
+            <h1 className="font-extrabold text-4xl md:text-6xl tracking-tighter text-foreground leading-[1.1]">
+              {title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-muted-foreground">
+              {author && (
+                <div className="flex gap-2 items-center font-medium">
+                  <User className="w-4 h-4 text-primary" /> {author}
+                </div>
+              )}
+              {year && (
+                <div className="flex gap-2 items-center font-medium">
+                  <Calendar className="w-4 h-4 text-primary" /> {year}
+                </div>
+              )}
+            </div>
+          </motion.div>
 
-          <div className="flex items-center gap-4 text-muted-foreground mt-3">
-            {author && (
-              <div className="flex gap-1 items-center font-medium!">
-                <User className="w-4 h-4" /> {author}
+          <motion.div variants={fadeIn} className="space-y-4">
+            <div className="h-px bg-border w-full" />
+            <h2 className="font-bold text-xl uppercase tracking-tight">About This Book</h2>
+            <p className="text-muted-foreground leading-relaxed text-[15px] whitespace-pre-line max-w-3xl">
+              {description}
+            </p>
+            <div className="h-px bg-border w-full" />
+          </motion.div>
+
+          <motion.div variants={fadeIn} className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex flex-col gap-1">
+               <div className="flex items-center text-xs text-muted-foreground uppercase font-semibold">
+                {addedBy && <>Added by <span className="text-foreground ml-1">{addedBy.firstName}</span></>}
+                <Dot />
+                {createdAt && <span>{formatDate(createdAt)}</span>}
               </div>
-            )}
+              {price != null && (
+                <div className="text-3xl font-black text-foreground">
+                  {formatPrice(price, currency)}
+                </div>
+              )}
+            </div>
 
-            {year && (
-              <div className="flex gap-1 items-center font-medium!">
-                <Calendar className="w-4 h-4" />
-                {year}
-              </div>
-            )}
-          </div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                size="lg"
+                className="w-full bg-black sm:w-auto px-9 py-4 text-[15px] rounded-full shadow-xl hover:bg-black/90 hover:shadow-2xl transition-all"
+                onClick={() => router.push(`/book/${_id}/read`)}
+              >
+                <BookOpen className="w-3 h-3 mr-2" /> Read Now
+              </Button>
+            </motion.div>
+          </motion.div>
 
-          <hr className="my-4" />
-
-          <h2 className="font-semibold text-2xl pt-3">About This Book</h2>
-          <p className="text-muted-foreground mt-2 whitespace-pre-line">
-            {description}
-          </p>
-
-          <hr className="my-4" />
-          <p className="flex items-center text-sm text-muted-foreground">
-            {addedBy && (
-              <span>
-                Added by <span className="text-black">{addedBy.firstName}</span>
-              </span>
-            )}
-
-            <Dot />
-
-            {createdAt && <span>{formatDate(createdAt)}</span>}
-          </p>
-          <Button
-            className="mt-3 flex items-center justify-center gap-2 w-fit py-2 px-6 
-             bg-[#000000] text-white font-medium rounded-full transition-colors 
-             border border-transparent hover:bg-[#000000]/80"
-            onClick={() => router.push(`/book/${_id}/read`)}
-          >
-            Read
-          </Button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
