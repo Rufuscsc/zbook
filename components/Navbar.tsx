@@ -15,27 +15,7 @@ const Navbar = () => {
     const [cartCount, setCartCount] = useState(0);
     const [showToast, setShowToast] = useState(false);
 
-    // Fetch cart items count on load
-    const fetchCart = async () => {
-        try {
-            const res = await axios.get("/api/cart");
-            setCartCount(res.data?.cart?.books?.length || 0);
-        } catch (error) {
-            console.error("Failed to fetch cart", error);
-        }
-    };
-
-    useEffect(() => {
-        fetchCart();
-    }, []);
-
-    // Show toast when a book is added (simulate with event or call this from BookDetails)
-    const handleAddToCartToast = () => {
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 1500);
-        fetchCart(); // update cart count
-    };
-
+   
     function isActive(path: string) {
         return pathname === path;
     }

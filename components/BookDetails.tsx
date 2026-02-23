@@ -13,6 +13,7 @@ import {
   User,
   ShoppingCart,
   BookOpen,
+  CreditCard,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import Link from "next/link";
@@ -22,6 +23,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { formatPrice } from "@/lib/formatPrice";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePaystackPayment } from "react-paystack";
 
 const BookDetails = ({
   _id,
@@ -38,7 +40,7 @@ const BookDetails = ({
 }: Book & { price?: number; currency?: string }) => {
   const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
-  
+
   // States
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -47,6 +49,32 @@ const BookDetails = ({
   const [isRemoving, setIsRemoving] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isInCart, setIsInCart] = useState(false);
+
+  // --- Paystack Setup ---
+  const config = {
+    reference: `REF_${Math.floor(Math.random() * 1000000000 + 1)}`,
+    email: user?.primaryEmailAddress?.emailAddress || "",
+    amount: (price || 0), // Paystack expects cents for USD (e.g. 1000 = $10.00)
+    publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY as string,
+    currency: "USD", // Set to USD as requested
+  };
+
+  const initializePayment = usePaystackPayment(config);
+
+  const onSuccess = async (reference: any) => {
+    // 1. Add to library database
+    await handleAddToLibrary();
+    // 2. Redirect to reader page immediately
+    router.push(`/book/${_id}/read`);
+  };
+
+  const onClose = () => {
+    console.log("Payment window closed");
+  };
+
+  // Logic Helpers
+  const isFree = price === 0 || !price;
+  const canRead = isInLibrary || isFree;
 
   // Animation Variants
   const fadeIn = {
@@ -59,37 +87,18 @@ const BookDetails = ({
     animate: { transition: { staggerChildren: 0.1 } }
   };
 
-  const formatDate = (d?: string) => {
-    if (!d) return "";
-    try {
-      const date = new Date(d);
-      if (isNaN(date.getTime())) return d;
-      return date.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    } catch { return d; }
-  };
-
-  // --- Handlers (Kept your logic identical) ---
-  const handleDelete = async () => {
-    try {
-      setIsDeleting(true);
-      await axios.delete(`/api/book/${_id}`);
-      router.push("/explore");
-    } catch (error) { console.error(error); } 
-    finally { setIsDeleting(false); }
-  };
-
+  // --- Handlers ---
   const handleAddToLibrary = async () => {
     if (!_id) return;
     try {
       setIsAdding(true);
       const res = await axios.post("/api/library", { bookId: _id });
       if (res.data?.added) setIsInLibrary(true);
-    } catch (error) { console.error(error); } 
-    finally { setIsAdding(false); }
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setIsAdding(false); 
+    }
   };
 
   const handleRemoveFromLibrary = async () => {
@@ -98,8 +107,11 @@ const BookDetails = ({
       setIsRemoving(true);
       const res = await axios.delete("/api/library", { data: { bookId: _id } });
       if (res.data?.removed) setIsInLibrary(false);
-    } catch (error) { console.error(error); } 
-    finally { setIsRemoving(false); }
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setIsRemoving(false); 
+    }
   };
 
   const handleAddToCart = async () => {
@@ -108,8 +120,11 @@ const BookDetails = ({
       setIsAddingToCart(true);
       const res = await axios.post("/api/cart", { bookId: _id });
       if (res.data?.added) setIsInCart(true);
-    } catch (error) { console.error(error); } 
-    finally { setIsAddingToCart(false); }
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setIsAddingToCart(false); 
+    }
   };
 
   const handleRemoveFromCart = async () => {
@@ -118,8 +133,23 @@ const BookDetails = ({
       setIsAddingToCart(true);
       const res = await axios.delete("/api/cart", { data: { bookId: _id } });
       if (res.data?.removed) setIsInCart(false);
-    } catch (error) { console.error(error); } 
-    finally { setIsAddingToCart(false); }
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setIsAddingToCart(false); 
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await axios.delete(`/api/book/${_id}`);
+      router.push("/explore");
+    } catch (error) { 
+      console.error(error); 
+    } finally { 
+      setIsDeleting(false); 
+    }
   };
 
   useEffect(() => {
@@ -135,8 +165,11 @@ const BookDetails = ({
         const books = res.data?.library?.books || [];
         const found = books.some((b: any) => b?._id === _id);
         if (mounted) setIsInLibrary(found);
-      } catch (error) { console.error(error); } 
-      finally { if (mounted) setIsCheckingLibrary(false); }
+      } catch (error) { 
+        console.error(error); 
+      } finally { 
+        if (mounted) setIsCheckingLibrary(false); 
+      }
     };
     checkLibrary();
     return () => { mounted = false; };
@@ -151,23 +184,20 @@ const BookDetails = ({
     >
       <div className="flex flex-col md:flex-row items-start gap-8 lg:gap-16">
         
-        {/* LEFT COLUMN: Cover + Buttons */}
+        {/* LEFT COLUMN: Cover & Actions */}
         <motion.div variants={fadeIn} className="w-full md:w-1/3 lg:w-1/4 flex flex-col items-center md:items-start">
           <motion.div 
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300 }}
-            className="relative w-full max-w-75 md:max-w-none aspect-2/3 overflow-hidden rounded-xl bg-muted shadow-2xl ring-1 ring-black/5"
+            className="relative w-full aspect-2/3 overflow-hidden rounded-xl bg-muted shadow-2xl ring-1 ring-black/5"
           >
             {cover ? (
               <Image src={cover} alt={`${title} cover`} className="object-cover" fill priority />
             ) : (
-              <div className="flex items-center justify-center h-full w-full text-muted-foreground italic border">
-                No cover available
-              </div>
+              <div className="flex items-center justify-center h-full w-full italic border text-muted-foreground">No cover available</div>
             )}
           </motion.div>
 
-          {/* Action Buttons */}
           <div className="pt-6 w-full flex flex-col gap-3">
             <AnimatePresence mode="wait">
               {isCheckingLibrary ? (
@@ -176,40 +206,45 @@ const BookDetails = ({
                 </Button>
               ) : (
                 <motion.div
+                  key="actions"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   className="flex flex-col gap-3"
                 >
-                  <Button
-                    variant={isInLibrary ? "outline" : "default"}
-                    className="w-full transition-all duration-300"
-                    onClick={isInLibrary ? handleRemoveFromLibrary : handleAddToLibrary}
-                    disabled={isRemoving || isAdding}
-                  >
-                    {isRemoving || isAdding ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isInLibrary ? (
-                      <><BookMinus className="w-4 h-4 mr-2" /> Remove Library</>
-                    ) : (
-                      <><BookPlus className="w-4 h-4 mr-2" /> Add to Library</>
-                    )}
-                  </Button>
-
-                  <Button
-                    onClick={isInCart ? handleRemoveFromCart : handleAddToCart}
-                    disabled={isAddingToCart}
-                    variant={isInCart ? "destructive" : "secondary"}
-                    className="w-full"
-                  >
-                    {isAddingToCart ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isInCart ? (
-                      "Remove from Cart"
-                    ) : (
-                      <><ShoppingCart className="w-4 h-4 mr-2" /> Add to Cart</>
-                    )}
-                  </Button>
+                  {isInLibrary ? (
+                    <Button variant="outline" className="w-full" onClick={handleRemoveFromLibrary} disabled={isRemoving}>
+                      {isRemoving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><BookMinus className="w-4 h-4 mr-2" /> Remove Library</>}
+                    </Button>
+                  ) : (
+                    <>
+                      {!isFree && (
+                        <Button
+                          onClick={() => {
+                            if (!isSignedIn) return router.push("/sign-in");
+                            // FIX: Passing callbacks as an object
+                            initializePayment({ onSuccess, onClose });
+                          }}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" /> Buy Now
+                        </Button>
+                      )}
+                      <Button variant="default" className="w-full" onClick={handleAddToLibrary} disabled={isAdding}>
+                        {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><BookPlus className="w-4 h-4 mr-2" /> Add to Library</>}
+                      </Button>
+                    </>
+                  )}
+                  {!isFree && (
+                    <Button
+                      onClick={isInCart ? handleRemoveFromCart : handleAddToCart}
+                      disabled={isAddingToCart}
+                      variant={isInCart ? "destructive" : "secondary"}
+                      className="w-full"
+                    >
+                      {isAddingToCart ? <Loader2 className="w-4 h-4 animate-spin" /> : isInCart ? "Remove from Cart" : <><ShoppingCart className="w-4 h-4 mr-2" /> Add to Cart</>}
+                    </Button>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -219,13 +254,7 @@ const BookDetails = ({
         {/* RIGHT COLUMN: Info */}
         <div className="flex-1 w-full space-y-6">
           <motion.div variants={fadeIn} className="flex justify-between items-start">
-            {genre && (
-              <Badge variant="outline" className="px-4 py-1.5 uppercase tracking-wider text-[10px] font-bold">
-                {genre}
-              </Badge>
-            )}
-
-            {/* Admin/Owner Controls */}
+            {genre && <Badge variant="outline" className="uppercase tracking-widest">{genre}</Badge>}
             {isLoaded && isSignedIn && (user?.id === addedBy?.id || user?.primaryEmailAddress?.emailAddress === "rufusmfmwellens@gmail.com") && (
               <div className="flex gap-1 bg-muted rounded-lg p-1">
                 <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
@@ -238,58 +267,29 @@ const BookDetails = ({
             )}
           </motion.div>
 
-          <motion.div variants={fadeIn} className="space-y-2">
-            <h1 className="font-extrabold text-4xl md:text-6xl tracking-tighter text-foreground leading-[1.1]">
-              {title}
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-muted-foreground">
-              {author && (
-                <div className="flex gap-2 items-center font-medium">
-                  <User className="w-4 h-4 text-primary" /> {author}
-                </div>
-              )}
-              {year && (
-                <div className="flex gap-2 items-center font-medium">
-                  <Calendar className="w-4 h-4 text-primary" /> {year}
-                </div>
-              )}
-            </div>
+          <motion.h1 variants={fadeIn} className="font-extrabold text-4xl md:text-6xl tracking-tighter leading-tight">
+            {title}
+          </motion.h1>
+          
+          <motion.div variants={fadeIn} className="flex items-center gap-4 text-muted-foreground font-medium">
+             {author && <div className="flex items-center gap-1"><User className="w-4 h-4 text-primary" /> {author}</div>}
+             {year && <div className="flex items-center gap-1"><Calendar className="w-4 h-4 text-primary" /> {year}</div>}
           </motion.div>
 
-          <motion.div variants={fadeIn} className="space-y-4">
-            <div className="h-px bg-border w-full" />
-            <h2 className="font-bold text-xl uppercase tracking-tight">About This Book</h2>
-            <p className="text-muted-foreground leading-relaxed text-[15px] whitespace-pre-line max-w-3xl">
-              {description}
-            </p>
-            <div className="h-px bg-border w-full" />
+          <motion.p variants={fadeIn} className="text-muted-foreground leading-relaxed whitespace-pre-line text-lg">
+            {description}
+          </motion.p>
+
+          <motion.div variants={fadeIn} className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-t pt-6">
+            <div className="text-3xl font-black">{isFree ? "FREE" : formatPrice(price!, currency || "USD")}</div>
+            {canRead && (
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button size="lg" className="rounded-full px-9" onClick={() => router.push(`/book/${_id}/read`)}>
+                  <BookOpen className="w-4 h-4 mr-2" /> Read Now
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
-
-          <motion.div variants={fadeIn} className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            <div className="flex flex-col gap-1">
-               <div className="flex items-center text-xs text-muted-foreground uppercase font-semibold">
-                {addedBy && <>Added by <span className="text-foreground ml-1">{addedBy.firstName}</span></>}
-                <Dot />
-                {createdAt && <span>{formatDate(createdAt)}</span>}
-              </div>
-              {price != null && (
-                <div className="text-3xl font-black text-foreground">
-                  {formatPrice(price, currency)}
-                </div>
-              )}
-            </div>
-
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                size="lg"
-                className="w-full bg-black sm:w-auto px-9 py-4 text-[15px] rounded-full shadow-xl hover:bg-black/90 hover:shadow-2xl transition-all"
-                onClick={() => router.push(`/book/${_id}/read`)}
-              >
-                <BookOpen className="w-3 h-3 mr-2" /> Read Now
-              </Button>
-            </motion.div>
-          </motion.div>
-
         </div>
       </div>
     </motion.div>
