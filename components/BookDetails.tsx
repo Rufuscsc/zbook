@@ -13,6 +13,7 @@ import {
   User,
   ShoppingCart,
   BookOpen,
+  CreditCard,
 } from "lucide-react";
 import { Badge } from "./ui/badge";
 import Link from "next/link";
@@ -53,6 +54,15 @@ const BookDetails = ({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isInCart, setIsInCart] = useState(false);
 
+  const [isBought, setIsBought] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Logic to check if the user already owns the book
+  useEffect(() => {
+    if (!_id) {
+      setIsBought(true);
+    }
+  },);
   // Animation Variants
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
@@ -92,7 +102,7 @@ const BookDetails = ({
     }
   };
 
-   const handleAddToLibrary = async () => {
+  const handleAddToLibrary = async () => {
     if (!_id) {
       console.log("Missing book id");
       return;
@@ -103,7 +113,7 @@ const BookDetails = ({
       const res = await axios.post("/api/library", { bookId: _id });
       console.log(res);
 
-      if(res.data?.added){
+      if (res.data?.added) {
         setIsInLibrary(true);
       }
     } catch (error) {
@@ -112,7 +122,6 @@ const BookDetails = ({
       setIsAdding(false);
     }
   };
-
 
   const handleRemoveFromLibrary = async () => {
     if (!_id) return;
@@ -186,16 +195,24 @@ const BookDetails = ({
       className="w-full max-w-7xl mx-auto p-4 md:p-8"
     >
       <div className="flex flex-col md:flex-row items-start gap-8 lg:gap-16">
-        
         {/* LEFT COLUMN: Cover + Buttons */}
-        <motion.div variants={fadeIn} className="w-full md:w-1/3 lg:w-1/4 flex flex-col items-center md:items-start">
+        <motion.div
+          variants={fadeIn}
+          className="w-full md:w-1/3 lg:w-1/4 flex flex-col items-center md:items-start"
+        >
           <motion.div
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300 }}
             className="relative w-full max-w-75 md:max-w-none aspect-2/3 overflow-hidden rounded-xl bg-muted shadow-2xl ring-1 ring-black/5"
           >
             {cover ? (
-              <Image src={cover} alt={`${title} cover`} className="object-cover" fill priority />
+              <Image
+                src={cover}
+                alt={`${title} cover`}
+                className="object-cover"
+                fill
+                priority
+              />
             ) : (
               <div className="flex items-center justify-center h-full w-full text-muted-foreground italic border">
                 No cover available
@@ -219,9 +236,25 @@ const BookDetails = ({
                   className="flex flex-col gap-3"
                 >
                   <Button
+                    
+                    className="w-full text-white transition-colors bg-green-600 hover:bg-green-700$"
+                  >
+                    {isAddingToCart ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : isBought ? (
+                      "Remove from Cart"
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" /> Buy now
+                      </>
+                    )}
+                  </Button>
+                  <Button
                     variant={isInLibrary ? "outline" : "default"}
                     className="w-full transition-all duration-300"
-                    onClick={isInLibrary ? handleRemoveFromLibrary : handleAddToLibrary}
+                    onClick={
+                      isInLibrary ? handleRemoveFromLibrary : handleAddToLibrary
+                    }
                     disabled={isRemoving || isAdding}
                   >
                     {isRemoving || isAdding ? (
@@ -261,26 +294,50 @@ const BookDetails = ({
 
         {/* RIGHT COLUMN: Info */}
         <div className="flex-1 w-full space-y-6">
-          <motion.div variants={fadeIn} className="flex justify-between items-start">
+          <motion.div
+            variants={fadeIn}
+            className="flex justify-between items-start"
+          >
             {genre && (
-              <Badge variant="outline" className="px-4 py-1.5 uppercase tracking-wider text-[10px] font-bold">
+              <Badge
+                variant="outline"
+                className="px-4 py-1.5 uppercase tracking-wider text-[10px] font-bold"
+              >
                 {genre}
               </Badge>
             )}
 
             {/* Admin/Owner Controls */}
-            {isLoaded && isSignedIn && (user?.id === addedBy?.id || user?.primaryEmailAddress?.emailAddress === "rufusmfmwellens@gmail.com") && (
-              <div className="flex gap-1 bg-muted rounded-lg p-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                  <Link href={`/book/${_id}/edit`}>
-                    <Edit className="w-4 h-4" />
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleDelete}>
-                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                </Button>
-              </div>
-            )}
+            {isLoaded &&
+              isSignedIn &&
+              (user?.id === addedBy?.id ||
+                user?.primaryEmailAddress?.emailAddress ===
+                  "rufusmfmwellens@gmail.com") && (
+                <div className="flex gap-1 bg-muted rounded-lg p-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    asChild
+                  >
+                    <Link href={`/book/${_id}/edit`}>
+                      <Edit className="w-4 h-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={handleDelete}
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              )}
           </motion.div>
 
           <motion.div variants={fadeIn} className="space-y-2">
@@ -303,19 +360,27 @@ const BookDetails = ({
 
           <motion.div variants={fadeIn} className="space-y-4">
             <div className="h-px bg-border w-full" />
-            <h2 className="font-bold text-xl uppercase tracking-tight">About This Book</h2>
+            <h2 className="font-bold text-xl uppercase tracking-tight">
+              About This Book
+            </h2>
             <p className="text-muted-foreground leading-relaxed text-[15px] whitespace-pre-line max-w-3xl">
               {description}
             </p>
             <div className="h-px bg-border w-full" />
           </motion.div>
 
-          <motion.div variants={fadeIn} className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <motion.div
+            variants={fadeIn}
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-6"
+          >
             <div className="flex flex-col gap-1">
               <div className="flex items-center text-xs text-muted-foreground uppercase font-semibold">
                 {addedBy && (
                   <>
-                    Added by <span className="text-foreground ml-1">{addedBy.firstName}</span>
+                    Added by{" "}
+                    <span className="text-foreground ml-1">
+                      {addedBy.firstName}
+                    </span>
                   </>
                 )}
                 <Dot />

@@ -41,7 +41,6 @@ const PdfViewer = ({ fileUrl }: Props) => {
   return (
     <div className="flex flex-col h-full bg-gray-50">
 
-      {/* 🔥 TOOLBAR */}
       <div className="flex items-center justify-between p-3 border-b bg-white shadow-sm">
         
         <div className="flex items-center gap-2">
@@ -70,14 +69,6 @@ const PdfViewer = ({ fileUrl }: Props) => {
           <Button
             size="icon"
             variant="outline"
-            onClick={() => window.open(fileUrl, "_blank")}
-          >
-            <Download className="w-4 h-4" />
-          </Button>
-
-          <Button
-            size="icon"
-            variant="outline"
             onClick={() => window.print()}
           >
             <Printer className="w-4 h-4" />
@@ -85,7 +76,6 @@ const PdfViewer = ({ fileUrl }: Props) => {
         </div>
       </div>
 
-      {/* 📄 PDF DISPLAY */}
       <div className="flex-1 overflow-auto flex justify-center p-4">
         <Document
           file={fileUrl}

@@ -30,8 +30,6 @@ const ReadBook = () => {
         setLoading(true);
 
         const res = await axios.get(`/api/book/${bookId}`);
-
-        // ⚠️ Important: Adjust depending on your API response
         setBookDetails(res.data.book ?? res.data);
       } catch (err) {
         console.error("Error fetching book:", err);
