@@ -57,8 +57,8 @@ const itemVariants: Variants = {
       className="py-8 px-10"
       variants={containerVariants}
       initial="hidden"
-      whileInView="visible" // Triggers animation when the user scrolls to this section
-      viewport={{ once: true, amount: 0.2 }} // Only animates once when 20% visible
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.2 }} 
     >
       <motion.div 
         className="flex items-center justify-between mb-6"

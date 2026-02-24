@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   // Try moving it to the top level if experimental shows it as invalid
   allowedDevOrigins: ["192.168.56.1:3000"], 
   experimental: {
+    proxyClientMaxBodySize: '100mb',
     // If you are using Server Actions, they have their own allowedOrigins
     serverActions: {
       allowedOrigins: ["192.168.56.1:3000"],

@@ -4,18 +4,11 @@ import Book from "@/models/book";
 import { UploadImage } from "@/lib/upload-image";
 import { NextRequest, NextResponse } from "next/server";
 
-// ============================
-// Types
-// ============================
-
 interface CloudinaryResponse {
   secure_url: string;
   public_id: string;
 }
 
-// ============================
-// POST: Add Book
-// ============================
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,17 +23,12 @@ export async function POST(req: NextRequest) {
     const user = await currentUser();
     const formData = await req.formData();
 
-    // ============================
-    // Extract Text Fields
-    // ============================
-
     const title = formData.get("title")?.toString().trim() ?? "";
     const author = formData.get("author")?.toString().trim() ?? "";
     const genre = formData.get("genre")?.toString().trim() ?? "";
     const description = formData.get("description")?.toString().trim() ?? "";
     const publishedYearRaw = formData.get("year")?.toString() ?? "";
 
-    // 🔥 NEW FIELDS
     const priceRaw = formData.get("price")?.toString() ?? "";
     const currency = formData.get("currency")?.toString() ?? "USD";
 
@@ -93,9 +81,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================
-    // Create Book in Database
-    // ============================
 
     const book = await Book.create({
       title,

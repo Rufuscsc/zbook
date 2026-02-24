@@ -23,7 +23,6 @@ import axios from "axios";
 import { formatPrice } from "@/lib/formatPrice";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Assuming Book type is defined elsewhere, if not, you can define it here.
 interface BookDetailsProps extends Book {
   price?: number;
   currency?: string;
@@ -93,18 +92,27 @@ const BookDetails = ({
     }
   };
 
-  const handleAddToLibrary = async () => {
-    if (!_id) return;
+   const handleAddToLibrary = async () => {
+    if (!_id) {
+      console.log("Missing book id");
+      return;
+    }
+
     try {
       setIsAdding(true);
       const res = await axios.post("/api/library", { bookId: _id });
-      if (res.data?.added) setIsInLibrary(true);
+      console.log(res);
+
+      if(res.data?.added){
+        setIsInLibrary(true);
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Failed to add to library", error);
     } finally {
       setIsAdding(false);
     }
   };
+
 
   const handleRemoveFromLibrary = async () => {
     if (!_id) return;
