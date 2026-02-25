@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { formatPrice } from "@/lib/formatPrice";
 import { motion, AnimatePresence } from "framer-motion";
+import { initializePayment } from "@/utils/paystack";
 
 interface BookDetailsProps extends Book {
   price?: number;
@@ -62,7 +63,7 @@ const BookDetails = ({
     if (!_id) {
       setIsBought(true);
     }
-  },);
+  });
   // Animation Variants
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
@@ -187,6 +188,46 @@ const BookDetails = ({
     };
   }, [_id]);
 
+  const newTotal = 10000;
+
+  const handleCheckout = async () => {
+    const amountInSmallestUnit = newTotal;
+    const paymentData = {
+      email: user?.emailAddresses?.[0]?.emailAddress || "",
+      amount: amountInSmallestUnit,
+      bookId: _id,
+    };
+    // try {
+    //   const paymentData = {
+    //     email: user?.emailAddresses?.[0]?.emailAddress || "",
+    //     amount: amountInSmallestUnit,
+    //     onSuccess: (reference: any) => {
+    //       console.log("Payment successful:", reference);
+
+    //       // 🚨 IMPORTANT: verify on backend
+    //       // verifyPayment(reference);
+    //     },
+    //     onClose: () => {
+    //       console.log("Payment popup closed");
+    //     },
+    //   };
+
+    //   const response = initializePayment(paymentData);
+    //   // const orderSummaryData = {
+    //   //   ...orderSummary,
+    //   //   total: newTotal ? newTotal : orderSummary.total,
+    //   // };
+    // } catch (error) {
+    //   console.error("Failed to initialize payment:", error);
+    // }
+
+    // const res = await axios.get("/api/cart");
+    console.log(paymentData);
+    const res = await axios.post(`/api/book/${_id}`, { ...paymentData });
+    window.location.href = res?.data.data.authorization_url;
+    console.log(res);
+  };
+
   return (
     <motion.div
       initial="initial"
@@ -236,8 +277,12 @@ const BookDetails = ({
                   className="flex flex-col gap-3"
                 >
                   <Button
-                    
                     className="w-full text-white transition-colors bg-green-600 hover:bg-green-700$"
+                    onClick={() =>
+                      isBought
+                        ? console.log("I have been bought")
+                        : handleCheckout()
+                    }
                   >
                     {isAddingToCart ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

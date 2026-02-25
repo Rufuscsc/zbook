@@ -24,10 +24,57 @@ export async function GET(
   }
 }
 
+export async function POST(request: Request) {
+  try {
+    const { email, amount, bookId } = await request.json();
+
+    if (!email || !amount) {
+      return Response.json(
+        { error: "Email and amount are required" },
+        { status: 400 },
+      );
+    }
+
+    const response = await fetch(
+      "https://api.paystack.co/transaction/initialize",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+        },
+        body: JSON.stringify({
+          email,
+          amount: amount * 100, // convert to kobo
+          callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}`,
+          metadata: JSON.stringify({
+            bookId,
+            // cancel_action: "/payment/cancel",
+          }),
+        }),
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return Response.json(
+        { error: data.message || "Payment initialization failed" },
+        { status: 400 },
+      );
+    }
+
+    return Response.json(data);
+  } catch (error) {
+    console.error("Paystack initialize error:", error);
+    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ bookId: string }> }
+  { params }: { params: Promise<{ bookId: string }> },
 ) {
   try {
     const { isAuthenticated } = await auth();
@@ -48,7 +95,7 @@ export async function PATCH(
     const genre = formData.get("genre")?.toString();
     const description = formData.get("description")?.toString();
     const publishedYearRaw = formData.get("year")?.toString();
-    
+
     // NEW: Extract Price and Currency
     const priceRaw = formData.get("price")?.toString();
     const currency = formData.get("currency")?.toString();
@@ -72,14 +119,15 @@ export async function PATCH(
     let isAdmin = requesterEmail === ADMIN_EMAIL;
 
     if (requesterId && addedBy) {
-      const addedById = typeof addedBy === "object" ? (addedBy as any).id : addedBy;
+      const addedById =
+        typeof addedBy === "object" ? (addedBy as any).id : addedBy;
       if (addedById === requesterId) isOwner = true;
     }
 
     if (!isOwner && !isAdmin) {
       return Response.json(
         { error: "Forbidden: only the owner or admin can modify this book" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -89,7 +137,7 @@ export async function PATCH(
     if (author) update.author = author;
     if (genre) update.genre = genre;
     if (description) update.description = description;
-    
+
     // Update Year if provided
     if (publishedYearRaw) {
       update.year = Number(publishedYearRaw);
@@ -98,20 +146,23 @@ export async function PATCH(
     // NEW: Update Price and Currency
     // We check if priceRaw is not null (it might be "0" which is falsy in JS, so check for null/undefined)
     if (priceRaw !== undefined && priceRaw !== null) {
-        update.price = parseInt(priceRaw); // Store as integer (cents/kobo)
+      update.price = parseInt(priceRaw); // Store as integer (cents/kobo)
     }
     if (currency) {
-        update.currency = currency;
+      update.currency = currency;
     }
 
     // 5. Handle Cover Image Update
     if (cover && cover.size > 0) {
       const existingCoverUrl = (existingBook as any).cover;
       if (existingCoverUrl) {
-        const publicId = existingCoverUrl.split('/').pop()?.split('.')[0];
-        if (publicId) await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+        const publicId = existingCoverUrl.split("/").pop()?.split(".")[0];
+        if (publicId)
+          await cloudinary.uploader.destroy(publicId, {
+            resource_type: "image",
+          });
       }
-      const uploadResult = await UploadImage(cover, "zbooks_covers") as any;
+      const uploadResult = (await UploadImage(cover, "zbooks_covers")) as any;
       if (uploadResult?.secure_url) update.cover = uploadResult.secure_url;
     }
 
@@ -119,17 +170,19 @@ export async function PATCH(
     if (pdf && pdf.size > 0) {
       const existingPdfUrl = (existingBook as any).pdfUrl;
       if (existingPdfUrl) {
-        const publicId = existingPdfUrl.split('/').pop()?.split('.')[0];
+        const publicId = existingPdfUrl.split("/").pop()?.split(".")[0];
         if (publicId) {
           try {
-            await cloudinary.uploader.destroy(publicId, { resource_type: "raw" });
+            await cloudinary.uploader.destroy(publicId, {
+              resource_type: "raw",
+            });
           } catch (delErr) {
             console.warn("Failed to delete previous PDF:", delErr);
           }
         }
       }
       // Assuming UploadImage handles "auto" resource type correctly for PDFs
-      const pdfUpload = await UploadImage(pdf, "zbooks_pdfs") as any;
+      const pdfUpload = (await UploadImage(pdf, "zbooks_pdfs")) as any;
       if (pdfUpload?.secure_url) update.pdfUrl = pdfUpload.secure_url;
     }
 
@@ -139,18 +192,16 @@ export async function PATCH(
     });
 
     return Response.json({ book: updatedBook }, { status: 200 });
-
   } catch (error) {
     console.error("Error updating book:", error);
     return Response.json({ error: "Failed to update book" }, { status: 500 });
   }
 }
 
-
 // Delete book by ID
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ bookId: string }> }
+  { params }: { params: Promise<{ bookId: string }> },
 ) {
   try {
     const { isAuthenticated } = await auth();
@@ -185,7 +236,7 @@ export async function DELETE(
     if (!isOwner) {
       return Response.json(
         { error: "Forbidden: only the user who added this book can update it" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -217,7 +268,7 @@ export async function DELETE(
               console.warn(
                 "Failed to delete Cloudinary image",
                 publicPart,
-                delErr
+                delErr,
               );
             }
           }
@@ -226,13 +277,13 @@ export async function DELETE(
     } catch (err) {
       console.warn(
         "Error while attempting to remove cover before deletion:",
-        err
+        err,
       );
     }
 
     await Book.findByIdAndDelete(bookId);
 
-    return Response.json({message: "Book deleted"}, {status: 200})
+    return Response.json({ message: "Book deleted" }, { status: 200 });
   } catch (error) {
     console.error("Error deleting book:", error);
     return Response.json({ error: "Failed to delete book" }, { status: 500 });

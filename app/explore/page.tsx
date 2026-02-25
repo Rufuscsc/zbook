@@ -106,7 +106,7 @@ const ExplorePage = () => {
 
         <p className="text-lg text-[#847062] max-w-xl leading-relaxed">
           Discover a world of{" "}
-          <span className="font-semibold text-[#847062]">{books.length}</span>{" "}
+          <span className="font-semibold text-[#847062]">{books?.length}</span>{" "}
           literary treasures handpicked for your next journey.
         </p>
       </motion.header>
@@ -136,7 +136,7 @@ const ExplorePage = () => {
       </div>
 
       <p className="text-[#847062] mt-5 mb-2 mx-2">
-        Showing {books.length} books
+        Showing {books?.length} books
       </p>
 
       {isLoading ? (
@@ -152,8 +152,8 @@ const ExplorePage = () => {
           animate="visible"
         >
           <AnimatePresence mode="popLayout">
-            {books.map((book) => (
-              <motion.div key={book._id} variants={itemVariants} layout>
+            {books?.map((book) => (
+              <motion.div key={book?._id} variants={itemVariants} layout>
                 <BookCard {...book} />
               </motion.div>
             ))}

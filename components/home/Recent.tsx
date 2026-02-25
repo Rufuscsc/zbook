@@ -24,7 +24,7 @@ const Recent = () => {
     fetchRecentBooks();
   }, []);
 
-  if (recentBooks.length === 0) {
+  if (recentBooks?.length === 0) {
     return (
       <div className="py-5 px-5 min-h-screen flex items-center justify-center text-foreground">
         <Loader2 className="animate-spin mr-1" /> Loading books...
@@ -33,34 +33,34 @@ const Recent = () => {
   }
 
   const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1, // Delays each card by 0.1s for a sequential effect
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1, // Delays each card by 0.1s for a sequential effect
+      },
     },
-  },
-};
+  };
 
-// Variants for individual items (header and cards)
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { duration: 0.5, ease: "easeOut" } 
-  },
-};
+  // Variants for individual items (header and cards)
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" },
+    },
+  };
 
   return (
-    <motion.section 
+    <motion.section
       className="py-8 px-10"
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, amount: 0.2 }} 
+      viewport={{ once: true, amount: 0.2 }}
     >
-      <motion.div 
+      <motion.div
         className="flex items-center justify-between mb-6"
         variants={itemVariants}
       >
@@ -72,7 +72,7 @@ const itemVariants: Variants = {
         </Button>
       </motion.div>
 
-      <motion.div 
+      <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6"
         variants={containerVariants}
       >
