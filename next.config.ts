@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
       allowedOrigins: ["192.168.56.1:3000"],
     },
   },
+
+  turbopack: {
+    root: __dirname,
+  }
 };
 
 export default nextConfig;
