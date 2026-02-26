@@ -5,7 +5,7 @@ import axios from "axios";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { Funnel, Loader2, Sparkles } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 
 const popularGenres = [
   "All",
@@ -21,7 +21,7 @@ const popularGenres = [
   "Gothic",
 ];
 
-const ExplorePage = () => {
+const ExploreContent = () => {
   const searchParams = useSearchParams();
   const [selectedGenre, setSelectedGenre] = useState(() => {
     const gp = searchParams.get("genre");
@@ -164,4 +164,14 @@ const ExplorePage = () => {
   );
 };
 
-export default ExplorePage;
+export default function ExplorePage() {
+  return (
+    <Suspense fallback={
+      <div className="py-5 px-5 min-h-32 flex items-center justify-center text-foreground">
+        <Loader2 className="animate-spin mr-1" /> Loading explore page...
+      </div>
+    }>
+      <ExploreContent />
+    </Suspense>
+  );
+}
