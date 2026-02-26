@@ -26,7 +26,7 @@ function BookPage() {
 
   return (
     <div>
-      {bookDetails ? (<BookDetails {...bookDetails} />
+      {bookDetails ? (<BookDetails {...bookDetails} price={bookDetails.price ?? 0} />
       ): (
       <div className="py-5 px-5 min-h-32 flex items-center justify-center text-foreground">
         <Loader2 className="animate-spin mr-1" /> Loading books...

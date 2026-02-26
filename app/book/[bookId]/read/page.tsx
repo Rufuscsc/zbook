@@ -3,16 +3,7 @@
 import axios from "axios";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-
-const PdfViewer = dynamic(() => import("@/components/Pdfviewer"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-full">
-      <p className="text-muted-foreground">Loading PDF Viewer...</p>
-    </div>
-  ),
-});
+import PdfViewer from "@/components/Pdfviewer";
 
 const ReadBook = () => {
   const params = useParams();
@@ -69,7 +60,8 @@ const ReadBook = () => {
   return (
     <div className="bg-background h-[calc(100vh-70px)] overflow-hidden">
       <div className="w-full h-full border border-[#DAD3C8] shadow-lg bg-white">
-        ${bookDetails.pdfUrl}
+        <PdfViewer fileUrl={`${bookDetails.pdfUrl}`} />
+
       </div>
     </div>
   );

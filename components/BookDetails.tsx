@@ -26,7 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { initializePayment } from "@/utils/paystack";
 
 interface BookDetailsProps extends Book {
-  price?: number;
+  price: number;
   currency?: string;
 }
 
@@ -188,10 +188,10 @@ const BookDetails = ({
     };
   }, [_id]);
 
-  const newTotal = 10000;
-
+  
+ 
   const handleCheckout = async () => {
-    const amountInSmallestUnit = newTotal;
+    const amountInSmallestUnit = price / 100;
     const paymentData = {
       email: user?.emailAddresses?.[0]?.emailAddress || "",
       amount: amountInSmallestUnit,
@@ -222,7 +222,7 @@ const BookDetails = ({
     // }
 
     // const res = await axios.get("/api/cart");
-    console.log(paymentData);
+    
     const res = await axios.post(`/api/book/${_id}`, { ...paymentData });
     window.location.href = res?.data.data.authorization_url;
     console.log(res);
