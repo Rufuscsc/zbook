@@ -114,7 +114,11 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
                       <div style={{ width: '1px', height: '20px', backgroundColor: '#e2e8f0' }} />
                       
                       <ZoomOut />
-                      <div style={{ width: '60px', textAlign: 'center' }}><Zoom /></div>
+```tsx
+                      <div style={{ width: 'auto', minWidth: '60px', textAlign: 'center' }}>
+                        <Zoom />
+                      </div>
+```
                       <ZoomIn />
                     </div>
                   );
