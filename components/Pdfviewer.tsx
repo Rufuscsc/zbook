@@ -3,7 +3,7 @@
 import React from "react";
 import { Worker, Viewer } from "@react-pdf-viewer/core";
 import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
-import { toolbarPlugin, ToolbarProps, ToolbarSlot } from "@react-pdf-viewer/toolbar";
+import { toolbarPlugin, ToolbarSlot } from "@react-pdf-viewer/toolbar";
 
 // Import styles
 import '@react-pdf-viewer/core/lib/styles/index.css';
@@ -62,7 +62,7 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
           <div
             style={{
               position: 'absolute',
-              bottom: '100px',
+              bottom: '80px',
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 100, // Highest layer
@@ -81,10 +81,9 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
                     GoToPreviousPage,
                     NumberOfPages,
                     ShowSearchPopover,
-                    Zoom,
                     ZoomIn,
                     ZoomOut,
-                  } = slots; // Note: Print and Download are excluded
+                  } = slots; // Note: Zoom (dropdown), Print and Download are excluded
                   
                   return (
                     <div
@@ -110,15 +109,10 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
                         <NumberOfPages />
                       </div>
                       <GoToNextPage />
-                      
+
                       <div style={{ width: '1px', height: '20px', backgroundColor: '#e2e8f0' }} />
                       
                       <ZoomOut />
-```tsx
-                      <div style={{ width: 'auto', minWidth: '60px', textAlign: 'center' }}>
-                        <Zoom />
-                      </div>
-```
                       <ZoomIn />
                     </div>
                   );
