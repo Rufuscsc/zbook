@@ -35,6 +35,7 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
   const [currency, setCurrency] = useState("NGN");
   const [isFree, setIsFree] = useState(false);
   const [genreError, setGenreError] = useState(false);
+  const [pdfSizeError, setPdfSizeError] = useState(false);
 
   const router = useRouter();
 
@@ -86,6 +87,12 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
 
     if (!selectedGenre) {
       setGenreError(true);
+      setIsLoading(false);
+      return;
+    }
+
+    if (pdfFile && pdfFile.size > 10 * 1024 * 1024) {
+      setPdfSizeError(true);
       setIsLoading(false);
       return;
     }
@@ -278,10 +285,21 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
 
           {/* PDF */}
           <div className="space-y-2 my-7">
-            <Label htmlFor="pdf" className="font-semibold text-lg">
-              Book PDF
-            </Label>
-            <div className="flex items-center gap-4 border-2 border-dashed rounded-lg p-3 bg-muted/30">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="pdf" className="font-semibold text-lg">
+                Book PDF
+              </Label>
+              {pdfSizeError && (
+                <span className="flex items-center text-sm font-medium text-destructive">
+                  <AlertCircle className="w-4 h-4 mr-1" /> File exceeds 10MB
+                </span>
+              )}
+            </div>
+            <div
+              className={`flex items-center gap-4 border-2 border-dashed rounded-lg p-3 ${
+                pdfSizeError ? "border-destructive/50 bg-destructive/10" : "bg-muted/30"
+              }`}
+            >
               <div className="bg-[#E6B81D]/10 p-3 rounded-full">
                 <FileText className="w-6 h-6 text-[#E6B81D]" />
               </div>
@@ -292,12 +310,24 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
                   type="file"
                   accept=".pdf"
                   // Not required in Edit Mode (keep existing if empty)
-                  onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
-                  className="block w-full cursor-pointer text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#E6B81D] file:text-white"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setPdfFile(file);
+                    if (file && file.size > 10 * 1024 * 1024) {
+                      setPdfSizeError(true);
+                    } else {
+                      setPdfSizeError(false);
+                    }
+                  }}
+                  className={`block w-full cursor-pointer text-sm ${pdfSizeError ? "text-destructive" : "text-muted-foreground"} file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-[#E6B81D] file:text-white`}
                 />
-                <p className="text-sm! text-muted-foreground mt-1">
+                <p
+                  className={`text-sm! mt-1 ${
+                    pdfSizeError ? "text-destructive font-semibold" : "text-muted-foreground"
+                  }`}
+                >
                   {pdfFile
-                    ? `Selected: ${pdfFile.name}`
+                    ? `Selected: ${pdfFile.name} (${(pdfFile.size / (1024 * 1024)).toFixed(2)}MB)`
                     : "Upload new PDF to replace existing one (Optional)"}
                 </p>
               </div>
