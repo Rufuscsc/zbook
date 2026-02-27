@@ -4,7 +4,7 @@ import Book from "@/models/book";
 import { UploadImage } from "@/lib/upload-image";
 import { NextRequest, NextResponse } from "next/server";
 
-export const maxDuration = 60; // Set max duration to 60 seconds to allow large PDF uploads
+export const maxDuration = 60;
 
 interface CloudinaryResponse {
   secure_url: string;
@@ -67,9 +67,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ============================
-    // Upload to Cloudinary
-    // ============================
 
     const [coverUpload, pdfUpload] = await Promise.all([
       UploadImage(cover, "zbooks") as Promise<CloudinaryResponse>,
@@ -115,9 +112,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ============================
-// GET: Fetch Books
-// ============================
 
 export async function GET(request: NextRequest) {
   try {
