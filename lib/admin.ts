@@ -1,5 +1,10 @@
 export const ADMIN_EMAILS = [
   "rufusmfmwellens@gmail.com",
+  "ladisea55@gmail.com",
+  "successfulcraig13@gmail.com",
+  "Abolajibakare4@gmail.com",
+  "sysavanemohammed01@gmail.com",
+  "pojo497@stu.ui.edu.ng"
 ];
 
 /**
