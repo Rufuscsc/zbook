@@ -4,7 +4,9 @@ export const ADMIN_EMAILS = [
   "successfulcraig13@gmail.com",
   "Abolajibakare4@gmail.com",
   "sysavanemohammed01@gmail.com",
-  "pojo497@stu.ui.edu.ng"
+  "pojo497@stu.ui.edu.ng",
+  "danielude90@gmail.com",
+  "silasadegoke331@gmail.com"
 ];
 
 /**
