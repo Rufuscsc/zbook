@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
 
     const genreParam = request.nextUrl.searchParams.get("genre");
-
+    
     const query: Record<string, string> = {};
 
     if (genreParam) {
@@ -128,9 +128,7 @@ export async function GET(request: NextRequest) {
         query.genre = genreUnquoted;
       }
     }
-
     const books = await Book.find(query).sort({ createdAt: -1 });
-
     return NextResponse.json({ books }, { status: 200 });
 
   } catch (error) {
