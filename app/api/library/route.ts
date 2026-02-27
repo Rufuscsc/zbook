@@ -1,3 +1,4 @@
+
 import { connectToDatabase } from "@/lib/connectToDB";
 import Book from "@/models/book";
 import Library from "@/models/library";
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     const already = library.books.some(
-      (b: any) => b.toString === book._id.toString
+      (b: any) => b.toString === bookId.toString
     );
 
     if (already) {
@@ -66,21 +67,19 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const { isAuthenticated } = await auth();
-    if (!isAuthenticated) {
+    const { isAuthenticated, userId } = await auth();
+    if (!isAuthenticated || !userId) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectToDatabase();
 
-    const user = await currentUser();
-
     const library = await Library.findOne({
-      userId: user?.id,
+      userId: userId,
     }).populate("books");
 
     return Response.json(
-      { library: library || { userId: user?.id, books: [] } },
+      { library: library || { userId: userId, books: [] } },
       { status: 200 }
     );
   } catch (error) {

@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { Button } from './ui/button';
 import { BookKey, BookOpen, Compass, Plus, Library, ShoppingCart } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/nextjs';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { isAdmin } from '@/lib/admin';
 
 const Navbar = () => {
     const pathname = usePathname();
+    const { user } = useUser();
 
     // Cart state
     const [cartCount, setCartCount] = useState(0);
@@ -52,16 +54,18 @@ const Navbar = () => {
                             </Link>
                         </Button>                        
 
-                        <Button                         
-                            variant={isActive("/add-book") ? "default" : "ghost"}
-                            size="sm"
-                            asChild
-                        >
-                            <Link href="/add-book">
-                                <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">Add book</span>
-                            </Link>
-                        </Button>                        
+                        {isAdmin(user?.primaryEmailAddress?.emailAddress) && (
+                            <Button                         
+                                variant={isActive("/add-book") ? "default" : "ghost"}
+                                size="sm"
+                                asChild
+                            >
+                                <Link href="/add-book">
+                                    <Plus className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Add book</span>
+                                </Link>
+                            </Button>                        
+                        )}
 
                         <Button                        
                             variant={isActive("/library") ? "default" : "ghost"}

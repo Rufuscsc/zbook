@@ -4,6 +4,8 @@ import Book from "@/models/book";
 import { UploadImage } from "@/lib/upload-image";
 import { NextRequest, NextResponse } from "next/server";
 
+export const maxDuration = 60; // Set max duration to 60 seconds to allow large PDF uploads
+
 interface CloudinaryResponse {
   secure_url: string;
   public_id: string;

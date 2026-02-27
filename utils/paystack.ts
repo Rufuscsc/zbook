@@ -1,4 +1,4 @@
-import PaystackPop, { PaystackOptions } from "@paystack/inline-js";
+import type { PaystackOptions } from "@paystack/inline-js";
 
 interface InitializePaymentParams {
   email: string;
@@ -8,13 +8,15 @@ interface InitializePaymentParams {
   metadata?: Record<string, unknown>;
 }
 
-export const initializePayment = ({
+export const initializePayment = async ({
   email,
   amount,
   onSuccess,
   onClose,
   metadata,
 }: InitializePaymentParams) => {
+  const PaystackModule = await import("@paystack/inline-js");
+  const PaystackPop = PaystackModule.default || (PaystackModule as any);
   const paystack = new PaystackPop();
 
   const options: PaystackOptions = {

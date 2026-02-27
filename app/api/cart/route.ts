@@ -68,21 +68,19 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const { isAuthenticated } = await auth();
-    if (!isAuthenticated) {
+    const { isAuthenticated, userId } = await auth();
+    if (!isAuthenticated || !userId) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await connectToDatabase();
 
-    const user = await currentUser();
-
     const cart = await Cart.findOne({
-      userId: user?.id,
+      userId: userId,
     }).populate("books");
 
     return Response.json(
-      { cart: cart || { userId: user?.id, books: [] } },
+      { cart: cart || { userId: userId, books: [] } },
       { status: 200 }
     );
   } catch (error) {

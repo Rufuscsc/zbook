@@ -24,6 +24,7 @@ import axios from "axios";
 import { formatPrice } from "@/lib/formatPrice";
 import { motion, AnimatePresence } from "framer-motion";
 import { initializePayment } from "@/utils/paystack";
+import { isAdmin } from "@/lib/admin";
 
 interface BookDetailsProps extends Book {
   price: number;
@@ -54,17 +55,41 @@ const BookDetails = ({
   const [isRemoving, setIsRemoving] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isInCart, setIsInCart] = useState(false);
-
-  const [isBought, setIsBought] = useState(false);
+  const [isCheckingCart, setIsCheckingCart] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isBought, setIsBought] = useState(false);
 
-  // Logic to check if the user already owns the book
+  const [isCheckingPurchase, setIsCheckingPurchase] = useState(true);
+
+  // Logic to check if the user already owns the book permanently
   useEffect(() => {
-    if (!_id) {
-      setIsBought(true);
-    }
-  });
-  // Animation Variants
+    let mounted = true;
+    const checkPurchase = async () => {
+      if (!_id || !isSignedIn) {
+        if (mounted) setIsCheckingPurchase(false);
+        return;
+      }
+
+      try {
+        setIsCheckingPurchase(true);
+        const res = await axios.get(`/api/purchase/check?bookId=${_id}`);
+        if (mounted && res.data?.hasPurchased) {
+          setIsBought(true);
+        }
+      } catch (error) {
+        console.error("Failed to check purchase status:", error);
+      } finally {
+        if (mounted) setIsCheckingPurchase(false);
+      }
+    };
+
+    checkPurchase();
+
+    return () => {
+      mounted = false;
+    };
+  }, [_id, isSignedIn]);
+  
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
@@ -90,7 +115,7 @@ const BookDetails = ({
     }
   };
 
-  // --- Handlers ---
+  
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
@@ -125,17 +150,24 @@ const BookDetails = ({
   };
 
   const handleRemoveFromLibrary = async () => {
-    if (!_id) return;
+    if (!_id) {
+      return;
+    }
+
     try {
       setIsRemoving(true);
       const res = await axios.delete("/api/library", { data: { bookId: _id } });
-      if (res.data?.removed) setIsInLibrary(false);
+
+      if (res.data?.removed) {
+        setIsInLibrary(false);
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Failed to remove from library", error);
     } finally {
       setIsRemoving(false);
     }
   };
+
 
   const handleAddToCart = async () => {
     if (!_id) return;
@@ -163,69 +195,115 @@ const BookDetails = ({
     }
   };
 
-  useEffect(() => {
+   useEffect(() => {
     let mounted = true;
-    const checkLibrary = async () => {
+    const checkLibray = async () => {
       if (!_id) {
-        if (mounted) setIsCheckingLibrary(false);
-        return;
+        if (mounted) {
+          setIsCheckingLibrary(false);
+          return;
+        }
       }
+
       try {
         setIsCheckingLibrary(true);
+
         const res = await axios.get("/api/library");
+        console.log("response: ", res);
         const books = res.data?.library?.books || [];
-        const found = books.some((b: any) => b?._id === _id);
-        if (mounted) setIsInLibrary(found);
+        console.log("Books: ", books);
+        const found = books.some((b: Book) => {
+          if (!b) return false;
+          if (b._id) {
+            return b._id === _id;
+          }
+          return false;
+        });
+
+        console.log("Found: ", found);
+        if (mounted) {
+          setIsInLibrary(found);
+        }
       } catch (error) {
-        console.error(error);
+        console.error("Failed to check library:", error);
       } finally {
         if (mounted) setIsCheckingLibrary(false);
       }
     };
-    checkLibrary();
+
+    checkLibray();
+
     return () => {
       mounted = false;
     };
   }, [_id]);
 
+  useEffect(() => {
+    let mounted = true;
+    const checkCart = async () => {
+      if (!_id) {
+        if (mounted) setIsCheckingCart(false);
+        return;
+      }
+
+      try {
+        setIsCheckingCart(true);
+        const res = await axios.get("/api/cart");
+        const books = res.data?.cart?.books || [];
+        const found = books.some((b: Book) => b && b._id === _id);
+
+        if (mounted) setIsInCart(found);
+      } catch (error) {
+        console.error("Failed to check cart:", error);
+      } finally {
+        if (mounted) setIsCheckingCart(false);
+      }
+    };
+
+    checkCart();
+
+    return () => {
+      mounted = false;
+    };
+  }, [_id]);
   
  
-  const handleCheckout = async () => {
+  const isFree = !price || price === 0;
+  const isAdminUser = isAdmin(user?.primaryEmailAddress?.emailAddress);
+  const isUploader = isLoaded && isSignedIn && user?.id === addedBy?.id;
+
+  const canRead = isFree || isBought || isAdminUser || isUploader;
+  const showBuyOptions = !isFree && !isBought;
+ 
+  const handleCheckout = () => {
     const amountInSmallestUnit = price / 100;
-    const paymentData = {
+    
+    initializePayment({
       email: user?.emailAddresses?.[0]?.emailAddress || "",
       amount: amountInSmallestUnit,
-      bookId: _id,
-    };
-    // try {
-    //   const paymentData = {
-    //     email: user?.emailAddresses?.[0]?.emailAddress || "",
-    //     amount: amountInSmallestUnit,
-    //     onSuccess: (reference: any) => {
-    //       console.log("Payment successful:", reference);
-
-    //       // 🚨 IMPORTANT: verify on backend
-    //       // verifyPayment(reference);
-    //     },
-    //     onClose: () => {
-    //       console.log("Payment popup closed");
-    //     },
-    //   };
-
-    //   const response = initializePayment(paymentData);
-    //   // const orderSummaryData = {
-    //   //   ...orderSummary,
-    //   //   total: newTotal ? newTotal : orderSummary.total,
-    //   // };
-    // } catch (error) {
-    //   console.error("Failed to initialize payment:", error);
-    // }
-
-    // const res = await axios.get("/api/cart");
-    
-    const res = await axios.post(`/api/book/${_id}`, { ...paymentData });
-    window.location.href = res?.data.data.authorization_url;
-    console.log(res);
+      metadata: { bookId: _id },
+      onSuccess: async (reference) => {
+        console.log("Payment successful! Ref:", reference);
+        setIsProcessing(true);
+        try {
+          // Record purchase permanently
+          await axios.post("/api/purchase", {
+            bookId: _id,
+            reference
+          });
+          setIsBought(true);
+        } catch (error) {
+          console.error("Failed to record purchase", error);
+          // Even if recording fails, they paid, so let them read it for this session
+          setIsBought(true); 
+        } finally {
+          setIsProcessing(false);
+        }
+      },
+      onClose: () => {
+        setIsProcessing(false);
+      }
+    });
   };
 
   return (
@@ -236,7 +314,6 @@ const BookDetails = ({
       className="w-full max-w-7xl mx-auto p-4 md:p-8"
     >
       <div className="flex flex-col md:flex-row items-start gap-8 lg:gap-16">
-        {/* LEFT COLUMN: Cover + Buttons */}
         <motion.div
           variants={fadeIn}
           className="w-full md:w-1/3 lg:w-1/4 flex flex-col items-center md:items-start"
@@ -261,78 +338,95 @@ const BookDetails = ({
             )}
           </motion.div>
 
-          {/* Action Buttons */}
           <div className="pt-6 w-full flex flex-col gap-3">
             <AnimatePresence mode="wait">
-              {isCheckingLibrary ? (
-                <Button key="loading" className="w-full" disabled>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                </Button>
-              ) : (
-                <motion.div
-                  key="content"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex flex-col gap-3"
+              {showBuyOptions && (
+                <Button
+                  size="sm"
+                  className="w-full text-white cursor-pointer transition-colors bg-green-600 hover:bg-green-700 font-semibold"
+                  onClick={() => {
+                    setIsProcessing(true);
+                    handleCheckout();
+                  }}
+                  disabled={isProcessing}
                 >
-                  <Button
-                    className="w-full text-white transition-colors bg-green-600 hover:bg-green-700$"
-                    onClick={() =>
-                      isBought
-                        ? console.log("I have been bought")
-                        : handleCheckout()
-                    }
-                  >
-                    {isAddingToCart ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isBought ? (
-                      "Remove from Cart"
-                    ) : (
-                      <>
-                        <CreditCard className="w-4 h-4 mr-2" /> Buy now
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant={isInLibrary ? "outline" : "default"}
-                    className="w-full transition-all duration-300"
-                    onClick={
-                      isInLibrary ? handleRemoveFromLibrary : handleAddToLibrary
-                    }
-                    disabled={isRemoving || isAdding}
-                  >
-                    {isRemoving || isAdding ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isInLibrary ? (
-                      <>
-                        <BookMinus className="w-4 h-4 mr-2" /> Remove Library
-                      </>
-                    ) : (
-                      <>
-                        <BookPlus className="w-4 h-4 mr-2" /> Add to Library
-                      </>
-                    )}
-                  </Button>
-
-                  <Button
-                    onClick={isInCart ? handleRemoveFromCart : handleAddToCart}
-                    disabled={isAddingToCart}
-                    variant={isInCart ? "destructive" : "secondary"}
-                    className="w-full"
-                  >
-                    {isAddingToCart ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : isInCart ? (
-                      "Remove from Cart"
-                    ) : (
-                      <>
-                        <ShoppingCart className="w-4 h-4 mr-2" /> Add to Cart
-                      </>
-                    )}
-                  </Button>
-                </motion.div>
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 mr-2" /> Buy now
+                    </>
+                  )}
+                </Button>
               )}
+              {isCheckingLibrary ? (
+              <Button className="w-full" disabled>
+                <Loader2 className="w-4 h-4 animate-spin" />
+              </Button>
+            ) : isInLibrary ? (
+              <>
+                <Button
+                  className="w-full"
+                  onClick={handleRemoveFromLibrary}
+                  disabled={isRemoving}
+                >
+                  {isRemoving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <BookMinus />
+                      Remove from Library
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button className="w-full" onClick={handleAddToLibrary}>
+                {isAdding ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <BookPlus />
+                    Add to My Library
+                  </>
+                )}
+              </Button>
+            )}
+            
+
+            {showBuyOptions && (isCheckingCart ? (
+              <Button className="w-full" disabled variant="secondary">
+                <Loader2 className="w-4 h-4 animate-spin" />
+              </Button>
+            ) : isInCart ? (
+              <Button
+                className="w-full transition-all duration-300"
+                variant="destructive"
+                onClick={handleRemoveFromCart}
+                disabled={isAddingToCart}
+              >
+                {isAddingToCart ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Remove from Cart"
+                )}
+              </Button>
+            ) : (
+              <Button
+                className="w-full transition-all duration-300"
+                variant="secondary"
+                onClick={handleAddToCart}
+                disabled={isAddingToCart}
+              >
+                {isAddingToCart ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4 mr-2" /> Add to Cart
+                  </>
+                )}
+              </Button>
+            ))}
             </AnimatePresence>
           </div>
         </motion.div>
@@ -355,9 +449,7 @@ const BookDetails = ({
             {/* Admin/Owner Controls */}
             {isLoaded &&
               isSignedIn &&
-              (user?.id === addedBy?.id ||
-                user?.primaryEmailAddress?.emailAddress ===
-                  "rufusmfmwellens@gmail.com") && (
+              (user?.id === addedBy?.id || isAdminUser) && (
                 <div className="flex gap-1 bg-muted rounded-lg p-1">
                   <Button
                     variant="ghost"
@@ -432,21 +524,24 @@ const BookDetails = ({
                 {createdAt && <span>{formatDate(createdAt)}</span>}
               </div>
               {price != null && (
-                <div className="text-3xl font-black text-foreground">
+                <div className={`text-3xl font-black ${isBought ? "text-muted-foreground line-through decoration-red-500 decoration-2" : "text-foreground"}`}>
                   {formatPrice(price, currency)}
                 </div>
               )}
             </div>
 
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                size="lg"
-                className="w-full bg-black sm:w-auto px-9 py-4 text-[15px] rounded-full shadow-xl hover:bg-black/90 hover:shadow-2xl transition-all"
-                onClick={() => router.push(`/book/${_id}/read`)}
-              >
-                <BookOpen className="w-3 h-3 mr-2" /> Read Now
-              </Button>
-            </motion.div>
+            {canRead && (
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  size="lg"
+                  className="w-full bg-black sm:w-auto px-9 py-4 text-[15px] rounded-full shadow-xl hover:bg-black/90 hover:shadow-2xl transition-all"
+                  onClick={() => router.push(`/book/${_id}/read`)}
+                  disabled={!canRead}
+                >
+                  <BookOpen className="w-3 h-3 mr-2" /> Read Now
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </div>

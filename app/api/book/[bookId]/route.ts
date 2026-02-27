@@ -3,6 +3,7 @@ import { UploadImage } from "@/lib/upload-image";
 import { connectToDatabase } from "@/lib/connectToDB";
 import Book from "@/models/book";
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { isAdmin } from "@/lib/admin";
 
 export async function GET(
   request: Request,
@@ -26,7 +27,7 @@ export async function GET(
 
 export async function POST(request: Request) {
   try {
-    const { email, amount, bookId } = await request.json();
+    const { email, amount, bookId, returnUrl } = await request.json();
 
     if (!email || !amount) {
       return Response.json(
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           email,
           amount: amount * 100, // convert to kobo
-          callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}`,
+          callback_url: returnUrl || `${process.env.NEXT_PUBLIC_BASE_URL}`,
           metadata: JSON.stringify({
             bookId,
             // cancel_action: "/payment/cancel",
@@ -114,9 +115,8 @@ export async function PATCH(
     const requesterId = user?.id;
     const requesterEmail = user?.emailAddresses?.[0]?.emailAddress;
 
-    const ADMIN_EMAIL = "rufusmfmwellens@gmail.com";
     let isOwner = false;
-    let isAdmin = requesterEmail === ADMIN_EMAIL;
+    let isAdminUser = isAdmin(requesterEmail);
 
     if (requesterId && addedBy) {
       const addedById =
@@ -124,7 +124,7 @@ export async function PATCH(
       if (addedById === requesterId) isOwner = true;
     }
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdminUser) {
       return Response.json(
         { error: "Forbidden: only the owner or admin can modify this book" },
         { status: 403 },
@@ -223,8 +223,10 @@ export async function DELETE(
 
     const addedBy = (existingBook as any).addedBy;
     const requesterId = user?.id;
+    const requesterEmail = user?.emailAddresses?.[0]?.emailAddress;
 
     let isOwner = false;
+    let isAdminUser = isAdmin(requesterEmail);
 
     if (requesterId && addedBy && typeof addedBy === "object") {
       const addedById = (addedBy as any).id;
@@ -233,9 +235,9 @@ export async function DELETE(
       }
     }
 
-    if (!isOwner) {
+    if (!isOwner && !isAdminUser) {
       return Response.json(
-        { error: "Forbidden: only the user who added this book can update it" },
+        { error: "Forbidden: only the user who added this book or an admin can delete it" },
         { status: 403 },
       );
     }
