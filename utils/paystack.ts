@@ -23,7 +23,7 @@ export const initializePayment = async ({
     // key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY, // Vite
     key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!, // Next.js
     email,
-    amount: amount * 100, // convert to kobo
+    amount: Math.round(amount * 100), // convert to kobo
     currency: "NGN",
     metadata,
     callback: (response) => {

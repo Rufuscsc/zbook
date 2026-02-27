@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           email,
-          amount: amount * 100, // convert to kobo
+          amount: Math.round(amount * 100), // convert to kobo
           callback_url: returnUrl || `${process.env.NEXT_PUBLIC_BASE_URL}`,
           metadata: JSON.stringify({
             bookId,
