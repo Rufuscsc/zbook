@@ -330,6 +330,7 @@ const BookDetails = ({
                 className="object-cover"
                 fill
                 priority
+                unoptimized
               />
             ) : (
               <div className="flex items-center justify-center h-full w-full text-muted-foreground italic border">

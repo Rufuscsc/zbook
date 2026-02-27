@@ -34,6 +34,7 @@ const BookCard = ({
             className="w-full h-full object-cover rounded-t-sm transition-transform duration-500 ease-in-out group-hover:scale-110"
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            unoptimized
           />
           {/* Subtle overlay gradient on hover */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
