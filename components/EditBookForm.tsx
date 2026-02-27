@@ -6,7 +6,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { BookPlus, FileText } from "lucide-react";
+import { BookPlus, FileText, AlertCircle } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
@@ -34,6 +34,7 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
   const [price, setPrice] = useState("");
   const [currency, setCurrency] = useState("NGN");
   const [isFree, setIsFree] = useState(false);
+  const [genreError, setGenreError] = useState(false);
 
   const router = useRouter();
 
@@ -82,6 +83,12 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    if (!selectedGenre) {
+      setGenreError(true);
+      setIsLoading(false);
+      return;
+    }
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
@@ -189,12 +196,16 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
 
             <div className="flex gap-3">
               <Input
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 placeholder="1500.00"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^\d*\.?\d*$/.test(val)) {
+                    setPrice(val);
+                  }
+                }}
                 disabled={isFree}
                 required={!isFree}
                 className="h-12"
@@ -295,7 +306,14 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
 
           {/* GENRE */}
           <div className="space-y-3">
-            <Label className="font-semibold text-lg">Genre *</Label>
+            <div className="flex items-center gap-2">
+              <Label className="font-semibold text-lg">Genre *</Label>
+              {genreError && (
+                <span className="flex items-center text-sm font-medium text-destructive">
+                  <AlertCircle className="w-4 h-4 mr-1" /> Please select a genre
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
               {popularGenres.map((genre) => (
                 <Button
@@ -303,8 +321,11 @@ const EditBookForm = ({ bookId }: { bookId: string }) => {
                   type="button"
                   variant={selectedGenre === genre ? "default" : "outline"}
                   size="sm"
-                  className="rounded-full"
-                  onClick={() => setSelectedGenre(genre)}
+                  className={`rounded-full ${genreError ? "border-destructive text-destructive" : ""}`}
+                  onClick={() => {
+                    setSelectedGenre(genre);
+                    setGenreError(false);
+                  }}
                 >
                   {genre}
                 </Button>

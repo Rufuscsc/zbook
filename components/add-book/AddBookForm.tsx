@@ -6,7 +6,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { useRef, useState } from "react";
 import { Textarea } from "../ui/textarea";
-import { BookPlus, FileText } from "lucide-react";
+import { BookPlus, FileText, AlertCircle } from "lucide-react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
@@ -33,6 +33,7 @@ const AddBookform = () => {
   const [price, setPrice] = useState("");
   const [currency, setCurrency] = useState("NGN");
   const [isFree, setIsFree] = useState(false);
+  const [genreError, setGenreError] = useState(false);
 
   const router = useRouter();
   const uploadFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -40,6 +41,12 @@ const AddBookform = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    if (!selectedGenre) {
+      setGenreError(true);
+      setIsLoading(false);
+      return;
+    }
 
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
@@ -96,7 +103,7 @@ const AddBookform = () => {
           <Input name="author" required className="h-12" />
         </div>
 
-        {/* 🔥 FREE TOGGLE */}
+        
         <div className="flex items-center gap-3 mt-4">
           <input
             type="checkbox"
@@ -118,12 +125,16 @@ const AddBookform = () => {
 
           <div className="flex gap-3">
             <Input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               placeholder="1500.00"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (/^\d*\.?\d*$/.test(val)) {
+                  setPrice(val);
+                }
+              }}
               disabled={isFree}
               required={!isFree}
               className="h-12"
@@ -223,7 +234,7 @@ const AddBookform = () => {
               <p className="text-sm! text-muted-foreground mt-1">
                 {pdfFile
                   ? `Selected: ${pdfFile.name}`
-                  : "Upload the book PDF file (Max 20MB)"}
+                  : "Upload the book PDF file (Max 10MB)"}
               </p>
             </div>
           </div>
@@ -231,9 +242,14 @@ const AddBookform = () => {
 
         {/* GENRE */}
         <div className="space-y-2">
-          <Label htmlFor="title" className="font-semibold text-lg">
-            Gener *
-          </Label>
+          <div className="flex items-center gap-2">
+            <Label className="font-semibold text-lg">Genre *</Label>
+            {genreError && (
+              <span className="flex items-center text-sm font-medium text-destructive">
+                <AlertCircle className="w-4 h-4 mr-1" /> Please select a genre
+              </span>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2">
             {popularGenre.map((genre) => (
               <Button
@@ -241,8 +257,11 @@ const AddBookform = () => {
                 key={genre}
                 size="sm"
                 type="button"
-                onClick={() => setSelectedGenre(genre)}
-                className="rounded-full"
+                onClick={() => {
+                  setSelectedGenre(genre);
+                  setGenreError(false);
+                }}
+                className={`rounded-full ${genreError ? "border-destructive text-destructive" : ""}`}
               >
                 {" "}
                 {genre}
